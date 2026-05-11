@@ -5,6 +5,7 @@ type PriorityAsset = {
   sort_order: number;
   file_name: string;
   imgbb_display_url: string;
+  imgbb_url?: string;
   width: number;
   height: number;
   source_web_uri: string;

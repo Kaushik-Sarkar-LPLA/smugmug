@@ -5,9 +5,7 @@ import { frontPageSlides } from '@/lib/priority-assets';
 import { contact } from '@/lib/site-content';
 
 export default function Home() {
-  const heroSlides = frontPageSlides
-    .filter((slide) => slide.width > slide.height)
-    .slice(0, 8);
+  const heroSlides = frontPageSlides.filter((slide) => slide.width > slide.height);
 
   return (
     <SiteShell>
@@ -55,9 +53,10 @@ function HeroSlideshow({ slides }: { slides: typeof frontPageSlides }) {
       {slides.map((slide, index) => (
         <div key={slide.source_web_uri} className="hero-slide absolute inset-0" style={{ animationDelay: `${index * 5}s` }}>
           <Image
-            src={slide.imgbb_display_url}
+            src={slide.imgbb_url ?? slide.imgbb_display_url}
             alt=""
             fill
+            unoptimized
             className="object-cover"
             sizes="100vw"
             priority={index < 2}
