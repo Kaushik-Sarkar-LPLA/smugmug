@@ -5,14 +5,14 @@ import { frontPageSlides } from '@/lib/priority-assets';
 import { contact } from '@/lib/site-content';
 
 export default function Home() {
-  const heroSlides = frontPageSlides.slice(0, 32);
+  const heroSlides = frontPageSlides
+    .filter((slide) => slide.width > slide.height)
+    .slice(0, 8);
 
   return (
     <SiteShell>
       <section className="relative flex min-h-[calc(100vh-9rem)] items-center overflow-hidden md:min-h-[calc(100vh-10rem)]">
-        <div className="absolute inset-0 opacity-75">
-          <MasonryPreview slides={heroSlides} />
-        </div>
+        <HeroSlideshow slides={heroSlides} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/20 to-[#050505]/85" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 md:px-8">
           <div className="max-w-3xl">
@@ -49,14 +49,22 @@ export default function Home() {
   );
 }
 
-function MasonryPreview({ slides }: { slides: typeof frontPageSlides }) {
+function HeroSlideshow({ slides }: { slides: typeof frontPageSlides }) {
   return (
-    <div className="grid h-full grid-cols-4 auto-rows-fr gap-2 p-2 md:grid-cols-8">
+    <div className="absolute inset-0 overflow-hidden">
       {slides.map((slide, index) => (
-        <div key={slide.source_web_uri} className={`relative overflow-hidden ${index % 5 === 0 ? 'row-span-2' : ''} ${index % 7 === 0 ? 'col-span-2' : ''}`}>
-          <Image src={slide.imgbb_display_url} alt="" fill className="object-cover" sizes="20vw" priority={index < 8} />
+        <div key={slide.source_web_uri} className="hero-slide absolute inset-0" style={{ animationDelay: `${index * 5}s` }}>
+          <Image
+            src={slide.imgbb_display_url}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority={index < 2}
+          />
         </div>
       ))}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_42%,transparent_0,rgba(0,0,0,0.12)_36%,rgba(0,0,0,0.72)_100%)]" />
     </div>
   );
 }
