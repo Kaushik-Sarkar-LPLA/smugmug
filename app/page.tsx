@@ -57,13 +57,16 @@ function HeroSlideshow({ slides }: { slides: typeof frontPageSlides }) {
             alt=""
             fill
             unoptimized
-            className="object-cover"
+            className="object-cover object-[center_32%]"
             sizes="100vw"
             priority={index < 2}
           />
         </div>
       ))}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_42%,transparent_0,rgba(0,0,0,0.12)_36%,rgba(0,0,0,0.72)_100%)]" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+        <div className="hero-progress h-full bg-[linear-gradient(90deg,rgba(214,181,109,0.15),rgba(214,181,109,0.95),rgba(255,255,255,0.85))]" />
+      </div>
     </div>
   );
 }
