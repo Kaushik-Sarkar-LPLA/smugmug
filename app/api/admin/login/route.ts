@@ -12,7 +12,10 @@ export async function POST(request: NextRequest) {
   }
 
   const next = String(form.get('next') || '/admin');
-  const response = NextResponse.redirect(new URL(next.startsWith('/admin') ? next : '/admin', request.url), 303);
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = next.startsWith('/admin') ? next : '/admin';
+  redirectUrl.search = '';
+  const response = NextResponse.redirect(redirectUrl, 303);
   setSessionCookie(response, username);
   return response;
 }
