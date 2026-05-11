@@ -3,6 +3,9 @@ import Link from 'next/link';
 const adminNav = [
   { label: 'Dashboard', href: '/admin' },
   { label: 'Homepage', href: '/admin/homepage' },
+  { label: 'Folders', href: '/admin/folders' },
+  { label: 'Galleries', href: '/admin/galleries' },
+  { label: 'Media', href: '/admin/media' },
   { label: 'View Site', href: '/' },
 ];
 

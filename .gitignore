@@ -25,7 +25,7 @@ data/raw/
 
 # migrated media
 public/media/
-media/
+/media/
 
 # logs
 *.log

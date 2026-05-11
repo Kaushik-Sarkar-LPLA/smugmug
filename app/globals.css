@@ -99,6 +99,29 @@ h3,
   animation: hero-slideshow var(--slideshow-duration, 130s) infinite;
 }
 
+.admin-label {
+  display: block;
+  color: rgba(255,255,255,0.48);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.admin-input {
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 1rem;
+  background: rgba(0,0,0,0.42);
+  padding: 0.75rem 1rem;
+  color: white;
+  outline: none;
+}
+
+.admin-input:focus {
+  border-color: rgba(255,255,255,0.42);
+}
+
 .hero-progress {
   width: 100%;
   transform-origin: left;
