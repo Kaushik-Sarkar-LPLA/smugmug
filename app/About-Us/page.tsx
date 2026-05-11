@@ -22,7 +22,7 @@ export default function AboutPage() {
           <p>From the shores of New Jersey to the beaches of California and beyond, we will be there with you every step of the way to guarantee your special moments are captured for all time. To us photography is all about being real and then letting us portray a picture of that moment to remember it forever.</p>
           <p>The thing that matters most: real people, real stories, real moments. We are a team of photographers, graphic designers, and retouchers who work with us on any given day.</p>
           <p>We would love to reach with you by phone or in person and talk about your wedding, event, portrait session, or video project.</p>
-          <a href={contact.messengerHref} className="inline-flex border border-white/40 px-6 py-3 text-xs uppercase tracking-[0.24em] text-white transition hover:bg-white hover:text-black">Click here to DM us directly</a>
+          <a href={contact.messengerHref} className="glass-button w-fit">Click here to DM us directly</a>
         </div>
       </section>
     </SiteShell>

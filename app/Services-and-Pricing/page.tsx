@@ -25,7 +25,7 @@ export default function ServicesPage() {
           <article key={service.title} className="flex min-h-80 flex-col border border-white/10 bg-white/[0.03] p-6 md:p-8">
             <h2 className="text-2xl font-light tracking-[0.08em]">{service.title}</h2>
             <p className="mt-5 flex-1 text-sm leading-7 text-white/62">{service.description}</p>
-            <a href={contact.messengerHref} className="mt-7 inline-flex w-fit border border-white/40 px-5 py-3 text-xs uppercase tracking-[0.22em] transition hover:bg-white hover:text-black">Book us now</a>
+            <a href={contact.messengerHref} className="glass-button mt-7 w-fit">Book us now</a>
           </article>
         ))}
       </section>

@@ -28,7 +28,7 @@ export default function ContactPage() {
         {qr ? <Image src={qr.imgbb_display_url} alt="Pixilens contact QR code" width={qr.width} height={qr.height} className="mx-auto h-auto w-full max-w-xs" /> : null}
         <div className="grid gap-4">
           {contactActions.map((action) => (
-            <a key={action.label} href={action.href} className="border border-white/10 bg-white/[0.03] px-6 py-5 text-sm uppercase tracking-[0.18em] text-white/75 transition hover:border-white/40 hover:text-white">
+            <a key={action.label} href={action.href} className="glass-button justify-start rounded-2xl px-6 py-5 text-left text-sm">
               {action.label}
             </a>
           ))}

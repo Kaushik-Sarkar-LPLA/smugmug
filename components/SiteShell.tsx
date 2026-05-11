@@ -12,8 +12,8 @@ export function SiteHeader() {
   const logo = findSiteAsset('i-9T6g4MC-XL_color1.png') ?? findSiteAsset('logo-main.png') ?? findSiteAsset('logo.png');
 
   return (
-    <header className="sticky top-0 z-30 px-3 pt-3 md:px-6">
-      <div className="glass-panel mx-auto flex max-w-7xl flex-col items-center gap-4 rounded-3xl px-5 py-5 md:px-8">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-black/35 px-5 py-5 shadow-2xl backdrop-blur-2xl md:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-4">
         <Link href="/" className="flex items-center justify-center" aria-label="Pixilens home">
           {logo ? (
             <Image src={logo.imgbb_display_url} alt="Pixilens Photography" width={260} height={125} className="h-20 w-auto object-contain md:h-24" priority />
@@ -28,9 +28,6 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <p className="text-center text-xs tracking-[0.12em] text-white/55 md:text-sm">
-          Phone/SMS/WhatsApp {contact.phoneDisplay} <span className="mx-3 text-white/25">|</span> Email: {contact.email}
-        </p>
       </div>
     </header>
   );
@@ -38,7 +35,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="mx-3 mb-3 mt-10 rounded-3xl border border-white/10 bg-black/45 px-5 py-10 text-center text-sm text-white/50 shadow-2xl backdrop-blur-xl md:mx-6 md:px-8">
+    <footer className="mt-10 border-t border-white/10 bg-black/35 px-5 py-10 text-center text-sm text-white/50 shadow-2xl backdrop-blur-2xl md:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-wrap items-center justify-center gap-5 text-xs uppercase tracking-[0.22em]">
           <a href="http://facebook.com/pixilens" className="hover:text-white">Facebook</a>

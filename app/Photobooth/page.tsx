@@ -30,8 +30,8 @@ export default function PhotoboothPage() {
           ) : null)}
         </div>
         <div className="mt-12 flex flex-wrap justify-center gap-4">
-          <a href={contact.rentalHref} className="border border-white px-7 py-3 text-xs uppercase tracking-[0.24em] transition hover:bg-white hover:text-black">Photobooth rental form</a>
-          <a href={contact.honeybookHref} className="border border-white/30 px-7 py-3 text-xs uppercase tracking-[0.24em] text-white/75 transition hover:border-white hover:text-white">Enquiry form</a>
+          <a href={contact.rentalHref} className="glass-button">Photobooth rental form</a>
+          <a href={contact.honeybookHref} className="glass-button">Enquiry form</a>
         </div>
       </section>
     </SiteShell>

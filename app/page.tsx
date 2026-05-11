@@ -22,8 +22,8 @@ export default function Home() {
               Austin Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
-              <Link href="/Services-and-Pricing" className="border border-white px-7 py-3 text-xs uppercase tracking-[0.28em] transition hover:bg-white hover:text-black">Services</Link>
-              <a href={contact.honeybookHref} className="border border-white/25 px-7 py-3 text-xs uppercase tracking-[0.28em] text-white/80 transition hover:border-white hover:text-white">Get Started</a>
+              <Link href="/Services-and-Pricing" className="glass-button">Services</Link>
+              <a href={contact.honeybookHref} className="glass-button">Get Started</a>
             </div>
           </div>
         </div>
