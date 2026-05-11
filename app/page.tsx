@@ -27,7 +27,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-2 pb-4 md:px-4 md:pb-6">
+      <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
           {frontPageSlides.map((slide, index) => (
             <figure key={slide.source_web_uri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white/5">
