@@ -1,4 +1,4 @@
-import manifest from '@/data/export/priority-imgbb-upload-manifest.json';
+import manifest from '@/app/priority-assets.json';
 
 type PriorityAsset = {
   priority_role: 'front-page-slides' | 'site-data';
