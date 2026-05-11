@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { ensureDatabase, getPool, hasDatabase, qname } from '@/lib/admin/db';
 import { frontPageSlides } from '@/lib/priority-assets';
 
 export type HomepageItem = {
@@ -52,22 +53,51 @@ function defaultConfig(): HomepageConfig {
   };
 }
 
-export async function getHomepageConfig(): Promise<HomepageConfig> {
+function mergeDefaults(config: HomepageConfig) {
+  const defaults = defaultConfig();
+  const byId = new Map(config.items.map((item) => [item.id, item]));
+  return {
+    slideDurationSeconds: config.slideDurationSeconds || defaults.slideDurationSeconds,
+    items: defaults.items.map((item) => ({ ...item, ...byId.get(item.id) })).sort((a, b) => a.sortOrder - b.sortOrder),
+  };
+}
+
+async function getHomepageConfigFromJson(): Promise<HomepageConfig> {
   try {
     const raw = await fs.readFile(configPath(), 'utf8');
-    const parsed = JSON.parse(raw) as HomepageConfig;
-    const defaults = defaultConfig();
-    const byId = new Map(parsed.items.map((item) => [item.id, item]));
-    return {
-      slideDurationSeconds: parsed.slideDurationSeconds || defaults.slideDurationSeconds,
-      items: defaults.items.map((item) => ({ ...item, ...byId.get(item.id) })).sort((a, b) => a.sortOrder - b.sortOrder),
-    };
+    return mergeDefaults(JSON.parse(raw) as HomepageConfig);
   } catch {
     return defaultConfig();
   }
 }
 
-export async function saveHomepageConfig(config: HomepageConfig) {
+async function saveHomepageConfigToJson(config: HomepageConfig) {
   await fs.mkdir(dataDir(), { recursive: true });
   await fs.writeFile(configPath(), JSON.stringify(config, null, 2));
+}
+
+export async function getHomepageConfig(): Promise<HomepageConfig> {
+  if (!hasDatabase()) return getHomepageConfigFromJson();
+  await ensureDatabase();
+  const result = await getPool().query(`SELECT value FROM ${qname('kv_store')} WHERE key = $1`, ['homepage_config']);
+  if (!result.rowCount) return defaultConfig();
+  return mergeDefaults(result.rows[0].value as HomepageConfig);
+}
+
+export async function saveHomepageConfig(config: HomepageConfig) {
+  if (!hasDatabase()) return saveHomepageConfigToJson(config);
+  await ensureDatabase();
+  await getPool().query(
+    `INSERT INTO ${qname('kv_store')} (key, value, updated_at) VALUES ($1, $2, now()) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = now()`,
+    ['homepage_config', JSON.stringify(config)],
+  );
+}
+
+export async function migrateJsonHomepageToDatabase() {
+  if (!hasDatabase()) return;
+  await ensureDatabase();
+  const existing = await getPool().query(`SELECT 1 FROM ${qname('kv_store')} WHERE key = $1`, ['homepage_config']);
+  if (existing.rowCount) return;
+  const config = await getHomepageConfigFromJson();
+  await saveHomepageConfig(config);
 }
