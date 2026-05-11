@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
 
   const next = String(form.get('next') || '/admin');
-  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const forwardedProto = 'https';
   const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
   const redirectUrl = new URL(`${forwardedProto}://${forwardedHost}`);
   redirectUrl.pathname = next.startsWith('/admin') ? next : '/admin';
