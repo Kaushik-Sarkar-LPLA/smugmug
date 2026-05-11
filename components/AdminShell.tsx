@@ -17,10 +17,10 @@ export function AdminShell({ title, children }: { title: string; children: React
           <p className="text-xs uppercase tracking-[0.4em] text-white/40">Pixilens Admin</p>
           <h1 className="font-art gold-text mt-2 text-4xl font-light tracking-[0.1em]">{title}</h1>
         </div>
-        <nav className="flex flex-wrap gap-2">
-          {adminNav.map((item) => <Link key={item.href} href={item.href} className="glass-button">{item.label}</Link>)}
+        <nav className="flex flex-wrap gap-1.5 md:justify-end">
+          {adminNav.map((item) => <Link key={item.href} href={item.href} className="admin-button">{item.label}</Link>)}
           <form action="/api/admin/logout" method="post">
-            <button className="glass-button" type="submit">Logout</button>
+            <button className="admin-button" type="submit">Logout</button>
           </form>
         </nav>
       </header>
