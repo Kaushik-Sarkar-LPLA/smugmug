@@ -1,16 +1,20 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
-import { frontPageSlides } from '@/lib/priority-assets';
+import { getHomepageConfig, type HomepageItem } from '@/lib/admin/homepage-config';
 import { contact } from '@/lib/site-content';
 
-export default function Home() {
-  const heroSlides = frontPageSlides.filter((slide) => slide.width > slide.height);
+export const revalidate = 0;
+
+export default async function Home() {
+  const config = await getHomepageConfig();
+  const heroSlides = config.items.filter((item) => item.enabled && item.useInHero).sort((a, b) => a.sortOrder - b.sortOrder);
+  const gallerySlides = config.items.filter((item) => item.enabled && item.useInGallery).sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <SiteShell>
       <section className="relative flex min-h-[calc(100vh-9rem)] items-center overflow-hidden md:min-h-[calc(100vh-10rem)]">
-        <HeroSlideshow slides={heroSlides} />
+        <HeroSlideshow slides={heroSlides} duration={config.slideDurationSeconds} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/20 to-[#050505]/85" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 md:px-8">
           <div className="max-w-3xl">
@@ -29,11 +33,11 @@ export default function Home() {
 
       <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
-          {frontPageSlides.map((slide, index) => (
-            <figure key={slide.source_web_uri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white/5">
+          {gallerySlides.map((slide, index) => (
+            <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white/5">
               <Image
-                src={slide.imgbb_display_url}
-                alt={slide.file_name || `Pixilens gallery image ${index + 1}`}
+                src={slide.displayUrl}
+                alt={slide.alt || `Pixilens gallery image ${index + 1}`}
                 width={slide.width || 1200}
                 height={slide.height || 800}
                 className="h-auto w-full object-cover opacity-95 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
@@ -47,17 +51,19 @@ export default function Home() {
   );
 }
 
-function HeroSlideshow({ slides }: { slides: typeof frontPageSlides }) {
+function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; duration: number }) {
+  const totalDuration = slides.length * duration;
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden" style={{ '--slide-duration': `${duration}s`, '--slideshow-duration': `${totalDuration}s` } as React.CSSProperties}>
       {slides.map((slide, index) => (
-        <div key={slide.source_web_uri} className="hero-slide absolute inset-0" style={{ animationDelay: `${index * 5}s` }}>
+        <div key={slide.sourceWebUri} className="hero-slide absolute inset-0" style={{ animationDelay: `${index * duration}s` }}>
           <Image
-            src={slide.imgbb_url ?? slide.imgbb_display_url}
+            src={slide.imageUrl}
             alt=""
             fill
             unoptimized
-            className="object-cover object-[center_32%]"
+            className="object-cover"
+            style={{ objectPosition: slide.objectPosition }}
             sizes="100vw"
             priority={index < 2}
           />

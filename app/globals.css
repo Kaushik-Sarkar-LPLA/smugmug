@@ -96,13 +96,13 @@ h3,
 .hero-slide {
   opacity: 0;
   transform: scale(1.08);
-  animation: hero-slideshow 130s infinite;
+  animation: hero-slideshow var(--slideshow-duration, 130s) infinite;
 }
 
 .hero-progress {
   width: 100%;
   transform-origin: left;
-  animation: hero-progress 5s linear infinite;
+  animation: hero-progress var(--slide-duration, 5s) linear infinite;
 }
 
 @keyframes hero-progress {
