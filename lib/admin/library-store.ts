@@ -13,6 +13,9 @@ export type FolderRecord = {
   parentId: string;
   visibility: Visibility;
   sortOrder: number;
+  smugmugUri?: string;
+  originalUrl?: string;
+  urlPath?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -26,6 +29,9 @@ export type GalleryRecord = {
   visibility: Visibility;
   sortOrder: number;
   coverMediaId: string;
+  smugmugUri?: string;
+  originalUrl?: string;
+  urlPath?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -49,6 +55,12 @@ export type MediaRecord = {
   sizeBytes: number;
   width?: number;
   height?: number;
+  smugmugUri?: string;
+  imageKey?: string;
+  originalUrl?: string;
+  urlPath?: string;
+  migrationStatus?: string;
+  migrationError?: string;
   createdAt: string;
   updatedAt: string;
 };

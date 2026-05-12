@@ -73,6 +73,9 @@ export async function ensureDatabase() {
       parent_id text NOT NULL DEFAULT '',
       visibility text NOT NULL DEFAULT 'public',
       sort_order integer NOT NULL DEFAULT 0,
+      smugmug_uri text,
+      original_url text,
+      url_path text,
       created_at timestamptz NOT NULL,
       updated_at timestamptz NOT NULL
     )
@@ -87,6 +90,9 @@ export async function ensureDatabase() {
       visibility text NOT NULL DEFAULT 'public',
       sort_order integer NOT NULL DEFAULT 0,
       cover_media_id text NOT NULL DEFAULT '',
+      smugmug_uri text,
+      original_url text,
+      url_path text,
       created_at timestamptz NOT NULL,
       updated_at timestamptz NOT NULL
     )
@@ -111,8 +117,28 @@ export async function ensureDatabase() {
       size_bytes bigint NOT NULL DEFAULT 0,
       width integer,
       height integer,
+      smugmug_uri text,
+      image_key text,
+      original_url text,
+      url_path text,
+      migration_status text,
+      migration_error text,
       created_at timestamptz NOT NULL,
       updated_at timestamptz NOT NULL
+    )
+  `);
+  for (const column of ['smugmug_uri text', 'original_url text', 'url_path text']) {
+    await db.query(`ALTER TABLE ${qname('folders')} ADD COLUMN IF NOT EXISTS ${column}`);
+    await db.query(`ALTER TABLE ${qname('galleries')} ADD COLUMN IF NOT EXISTS ${column}`);
+  }
+  for (const column of ['smugmug_uri text', 'image_key text', 'original_url text', 'url_path text', 'migration_status text', 'migration_error text']) {
+    await db.query(`ALTER TABLE ${qname('media')} ADD COLUMN IF NOT EXISTS ${column}`);
+  }
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS ${qname('migration_state')} (
+      key text PRIMARY KEY,
+      value jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now()
     )
   `);
   initialized = true;
