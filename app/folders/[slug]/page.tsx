@@ -29,7 +29,7 @@ export default async function FolderPage({ params }: { params: Promise<{ slug: s
         {galleries.map((gallery) => {
           const cover = store.media.find((item) => item.id === gallery.coverMediaId) || store.media.find((item) => item.galleryId === gallery.id && item.visibility === 'public');
           return (
-            <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-3xl">
+            <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
               <div className="relative aspect-[4/3] bg-white/5">
                 {cover?.displayUrl ? <Image src={cover.displayUrl} alt={gallery.title} fill className="object-cover opacity-85 transition duration-700 group-hover:scale-105 group-hover:opacity-100" sizes="(min-width:1024px) 33vw, 50vw" /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />

@@ -27,7 +27,7 @@ export default async function PortfolioCategoryPage({ params }: { params: Promis
         {category.galleries.length ? (
           <div className="space-y-14">
             {category.galleries.map((gallery) => (
-              <article key={gallery.webUri} className="glass-panel rounded-3xl p-5 md:p-7">
+              <article key={gallery.webUri} className="glass-panel rounded-xl p-5 md:p-7">
                 <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
                   <div>
                     <p className="text-xs uppercase tracking-[0.32em] text-white/45">{gallery.imageCount} items</p>
@@ -37,7 +37,7 @@ export default async function PortfolioCategoryPage({ params }: { params: Promis
                 </div>
                 <div className="columns-1 gap-4 sm:columns-2 lg:columns-4">
                   {gallery.images.map((image) => (
-                    <figure key={image.webUri} className="mb-4 break-inside-avoid overflow-hidden rounded-2xl bg-black/30">
+                    <figure key={image.webUri} className="mb-4 break-inside-avoid overflow-hidden rounded-lg bg-black/30">
                       {image.url ? (
                         <Image src={image.url} alt={image.fileName || gallery.title} width={image.width || 600} height={image.height || 400} className="h-auto w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
                       ) : null}
@@ -48,7 +48,7 @@ export default async function PortfolioCategoryPage({ params }: { params: Promis
             ))}
           </div>
         ) : (
-          <div className="glass-panel mx-auto max-w-3xl rounded-3xl p-8 text-center text-white/65">
+          <div className="glass-panel mx-auto max-w-3xl rounded-xl p-8 text-center text-white/65">
             This category exists in navigation, but no matching public SmugMug album was found in the first metadata pass.
           </div>
         )}

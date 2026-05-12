@@ -27,7 +27,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
       <section className="px-2 pb-20 md:px-4">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
           {media.map((item) => (
-            <figure key={item.id} className="mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white/5">
+            <figure key={item.id} className="mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white/5">
               {item.type === 'photo' ? (
                 <Image src={item.displayUrl} alt={item.title} width={item.width || 1200} height={item.height || 800} className="h-auto w-full object-cover" />
               ) : (

@@ -17,7 +17,7 @@ export default function PortfolioPage() {
         {portfolioCategories.map((category) => {
           const cover = category.galleries.find((gallery) => gallery.cover)?.cover;
           return (
-            <Link key={category.path} href={category.path} className="glass-panel group overflow-hidden rounded-3xl">
+            <Link key={category.path} href={category.path} className="glass-panel group overflow-hidden rounded-xl">
               <div className="relative aspect-[4/3] bg-white/5">
                 {cover?.url ? <Image src={cover.url} alt={category.label} fill className="object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-100" sizes="(min-width: 1024px) 33vw, 50vw" /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />

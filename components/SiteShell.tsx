@@ -12,7 +12,7 @@ export function SiteHeader() {
   const logo = findSiteAsset('i-9T6g4MC-XL_color1.png') ?? findSiteAsset('logo-main.png') ?? findSiteAsset('logo.png');
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#17130f]/10 bg-white/75 px-5 py-5 shadow-xl backdrop-blur-2xl md:px-8">
+    <header className="sticky top-0 z-30 border-b border-[#17130f]/10 px-4 py-4 shadow-xl backdrop-blur-2xl md:px-8 bg-[linear-gradient(110deg,rgba(255,255,255,0.82),rgba(255,232,197,0.62),rgba(220,238,255,0.58),rgba(244,221,255,0.54),rgba(255,255,255,0.8))]">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4">
         <Link href="/" className="flex items-center justify-center" aria-label="Pixilens home">
           {logo ? (
@@ -21,9 +21,9 @@ export function SiteHeader() {
             <span className="text-3xl font-light tracking-[0.28em]">PIXILENS</span>
           )}
         </Link>
-        <nav className="flex max-w-5xl flex-wrap items-center justify-center gap-2 rounded-full border border-[#17130f]/10 bg-white/70 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-[#17130f]/70 shadow-xl backdrop-blur-xl md:text-xs">
+        <nav className="grid w-full max-w-6xl grid-cols-2 gap-2 rounded-xl border border-[#17130f]/10 bg-white/60 p-2 text-center text-[10px] uppercase tracking-[0.14em] text-[#17130f]/72 shadow-xl backdrop-blur-xl sm:grid-cols-3 md:flex md:flex-wrap md:items-center md:justify-center md:text-xs">
           {navItems.map((item) => (
-            <Link key={item.label} href={localHref(item.href)} className="rounded-full px-3 py-2 transition hover:bg-white hover:text-[#17130f]">
+            <Link key={item.label} href={localHref(item.href)} className="rounded-lg px-3 py-2 transition hover:bg-white/90 hover:text-[#17130f] md:min-w-24">
               {item.label}
             </Link>
           ))}

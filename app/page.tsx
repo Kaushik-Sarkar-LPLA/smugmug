@@ -34,7 +34,7 @@ export default async function Home() {
       <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
           {gallerySlides.map((slide, index) => (
-            <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
+            <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
               <Image
                 src={slide.displayUrl}
                 alt={slide.alt || `Pixilens gallery image ${index + 1}`}
