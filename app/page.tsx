@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
-import { getHomepageConfig, type HomepageItem } from '@/lib/admin/homepage-config';
+import { HeroSlideshow } from '@/components/home/HeroSlideshow';
+import { getHomepageConfig } from '@/lib/admin/homepage-config';
 import { contact } from '@/lib/site-content';
 
 export const revalidate = 0;
@@ -48,31 +49,5 @@ export default async function Home() {
         </div>
       </section>
     </SiteShell>
-  );
-}
-
-function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; duration: number }) {
-  const totalDuration = slides.length * duration;
-  return (
-    <div className="absolute inset-0 overflow-hidden" style={{ '--slide-duration': `${duration}s`, '--slideshow-duration': `${totalDuration}s` } as React.CSSProperties}>
-      {slides.map((slide, index) => (
-        <div key={slide.sourceWebUri} className="hero-slide absolute inset-0" style={{ animationDelay: `${index * duration}s` }}>
-          <Image
-            src={slide.imageUrl}
-            alt=""
-            fill
-            unoptimized
-            className="object-cover"
-            style={{ objectPosition: slide.objectPosition }}
-            sizes="100vw"
-            priority={index < 2}
-          />
-        </div>
-      ))}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_42%,transparent_0,rgba(0,0,0,0.12)_36%,rgba(0,0,0,0.72)_100%)]" />
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-        <div className="hero-progress h-full bg-[linear-gradient(90deg,rgba(214,181,109,0.15),rgba(214,181,109,0.95),rgba(255,255,255,0.85))]" />
-      </div>
-    </div>
   );
 }

@@ -110,7 +110,6 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
 .hero-slide {
   opacity: 0;
   transform: scale(1.08);
-  animation: hero-slideshow var(--slideshow-duration, 130s) infinite;
 }
 
 .typewriter {
@@ -157,10 +156,12 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   100% { transform: scaleX(1); }
 }
 
-@keyframes hero-slideshow {
-  0% { opacity: 0; transform: scale(1.04) translateX(0); }
-  0.75% { opacity: 1; }
-  3.1% { opacity: 1; }
-  4.1% { opacity: 0; transform: scale(1.09) translateX(-1.2%); }
-  100% { opacity: 0; transform: scale(1.09) translateX(-1.2%); }
+.hero-active-slide {
+  animation: hero-active-slide var(--slide-duration, 5s) ease-out forwards;
+}
+
+@keyframes hero-active-slide {
+  from { opacity: 0; transform: scale(1.035) translateX(0); }
+  12% { opacity: 1; }
+  to { opacity: 1; transform: scale(1.08) translateX(-1%); }
 }
