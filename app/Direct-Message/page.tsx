@@ -7,10 +7,8 @@ export const metadata = {
 };
 
 const contactActions = [
-  { label: 'Save to contacts', href: contact.vcardHref },
   { label: 'Click here to contact us and get started', href: contact.honeybookHref },
   { label: 'WhatsApp +17372310033', href: contact.whatsappHref },
-  { label: 'Facebook DM http://m.me/pixilens', href: contact.messengerHref },
   { label: 'Phone Number +1737 231 0033', href: contact.phoneHref },
   { label: 'Email at contact@pixilens.com', href: contact.emailHref },
 ];
