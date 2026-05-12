@@ -23,7 +23,9 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
 }));
 const schema = process.env.DATABASE_SCHEMA || 'pixilens_smugmug';
 const dataDir = process.env.ADMIN_DATA_DIR || path.resolve(__dirname, '..', 'data/admin');
-const mediaRoot = process.env.MEDIA_ROOT || path.join(dataDir, 'media');
+function mediaRootDir() {
+  return process.env.MEDIA_ROOT || path.join(dataDir, 'media');
+}
 const limitAlbums = Number(args.limitAlbums || 0);
 const limitMedia = Number(args.limitMedia || 0);
 const onlyAlbumKey = args.albumKey || '';
@@ -155,7 +157,7 @@ async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
       const buffer = Buffer.from(await res.arrayBuffer());
       const ext = video.Ext ? `.${video.Ext}` : path.extname(item.FileName || '.mp4') || '.mp4';
       const relative = path.join('videos', galleryId, `${mediaId}-${slugify(title)}${ext}`);
-      const absolute = path.join(mediaRoot, relative);
+      const absolute = path.join(mediaRootDir(), relative);
       if (!dryRun) { await fsp.mkdir(path.dirname(absolute), { recursive: true }); await fsp.writeFile(absolute, buffer); }
       await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'video',$3,$4,$5,'public',$6,'local',$7,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'done',NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET migration_status='done',migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, `/api/media/${mediaId}`, absolute, item.FileName || `${mediaId}${ext}`, `video/${(video.Ext || 'mp4')}`, buffer.length, video.Width || item.OriginalWidth || null, video.Height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null]);
     } else {
