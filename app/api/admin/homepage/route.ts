@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
 import { getHomepageConfig, saveHomepageConfig } from '@/lib/admin/homepage-config';
+import { adminRedirectUrl } from '@/lib/admin/redirect';
 
 export async function POST(request: NextRequest) {
   if (!requireAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,5 +30,7 @@ export async function POST(request: NextRequest) {
   revalidatePath('/');
   revalidatePath('/admin');
   revalidatePath('/admin/homepage');
-  return NextResponse.redirect(new URL('/admin/homepage?saved=1', request.url), 303);
+  const redirectUrl = adminRedirectUrl(request, '/admin/homepage');
+  redirectUrl.searchParams.set('saved', '1');
+  return NextResponse.redirect(redirectUrl, 303);
 }

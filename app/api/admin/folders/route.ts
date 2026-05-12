@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
 import { getLibrary, id, now, saveLibrary, slugify, type Visibility } from '@/lib/admin/library-store';
+import { adminRedirectUrl } from '@/lib/admin/redirect';
 
 export async function POST(request: NextRequest) {
   if (!requireAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,5 +37,7 @@ export async function POST(request: NextRequest) {
   await saveLibrary(store);
   revalidatePath('/admin');
   revalidatePath('/admin/folders');
-  return NextResponse.redirect(new URL('/admin/folders?saved=1', request.url), 303);
+  const redirectUrl = adminRedirectUrl(request, '/admin/folders');
+  redirectUrl.searchParams.set('saved', '1');
+  return NextResponse.redirect(redirectUrl, 303);
 }

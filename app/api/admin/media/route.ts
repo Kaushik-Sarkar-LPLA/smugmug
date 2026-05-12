@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
 import { getLibrary, id, mediaRoot, now, saveLibrary, slugify, type Visibility } from '@/lib/admin/library-store';
+import { adminRedirectUrl } from '@/lib/admin/redirect';
 
 async function uploadPhotoToImgBB(file: File, name: string) {
   const key = process.env.IMGBB_API_KEY;
@@ -34,11 +35,17 @@ export async function POST(request: NextRequest) {
     await saveLibrary(store);
     revalidatePath('/admin');
     revalidatePath('/admin/media');
-    return NextResponse.redirect(new URL('/admin/media?saved=1', request.url), 303);
+    const redirectUrl = adminRedirectUrl(request, '/admin/media');
+    redirectUrl.searchParams.set('saved', '1');
+    return NextResponse.redirect(redirectUrl, 303);
   }
 
   const file = form.get('file');
-  if (!(file instanceof File) || file.size === 0) return NextResponse.redirect(new URL('/admin/media?error=file', request.url), 303);
+  if (!(file instanceof File) || file.size === 0) {
+    const redirectUrl = adminRedirectUrl(request, '/admin/media');
+    redirectUrl.searchParams.set('error', 'file');
+    return NextResponse.redirect(redirectUrl, 303);
+  }
   const galleryId = String(form.get('galleryId') || '');
   const type = file.type.startsWith('video/') ? 'video' : 'photo';
   const title = String(form.get('title') || file.name);
@@ -48,7 +55,11 @@ export async function POST(request: NextRequest) {
   const visibility = String(form.get('visibility') || 'public') as Visibility;
 
   if (type === 'photo') {
-    if (!file.type.startsWith('image/')) return NextResponse.redirect(new URL('/admin/media?error=type', request.url), 303);
+    if (!file.type.startsWith('image/')) {
+      const redirectUrl = adminRedirectUrl(request, '/admin/media');
+      redirectUrl.searchParams.set('error', 'type');
+      return NextResponse.redirect(redirectUrl, 303);
+    }
     const uploaded = await uploadPhotoToImgBB(file, `smugmug-admin-${mediaId}-${baseSlug}`);
     store.media.push({
       id: mediaId,
@@ -101,5 +112,7 @@ export async function POST(request: NextRequest) {
   await saveLibrary(store);
   revalidatePath('/admin');
   revalidatePath('/admin/media');
-  return NextResponse.redirect(new URL('/admin/media?saved=1', request.url), 303);
+  const redirectUrl = adminRedirectUrl(request, '/admin/media');
+  redirectUrl.searchParams.set('saved', '1');
+  return NextResponse.redirect(redirectUrl, 303);
 }
