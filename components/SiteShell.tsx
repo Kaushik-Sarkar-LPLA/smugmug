@@ -8,11 +8,11 @@ function localHref(href: string) {
   return href;
 }
 
-export function SiteHeader() {
+export function SiteHeader({ floating = false }: { floating?: boolean }) {
   const logo = findSiteAsset('i-9T6g4MC-XL_color1.png') ?? findSiteAsset('logo-main.png') ?? findSiteAsset('logo.png');
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#17130f]/10 px-4 py-4 shadow-xl backdrop-blur-2xl md:px-8 bg-[linear-gradient(110deg,rgba(255,255,255,0.82),rgba(255,232,197,0.62),rgba(220,238,255,0.58),rgba(244,221,255,0.54),rgba(255,255,255,0.8))]">
+    <header className={floating ? "absolute left-0 right-0 top-0 z-30 px-4 py-4 md:px-8" : "sticky top-0 z-30 border-b border-[#17130f]/10 px-4 py-4 shadow-xl backdrop-blur-2xl md:px-8 bg-[linear-gradient(110deg,rgba(255,255,255,0.82),rgba(255,232,197,0.62),rgba(220,238,255,0.58),rgba(244,221,255,0.54),rgba(255,255,255,0.8))]"}>
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4">
         <Link href="/" className="flex items-center justify-center" aria-label="Pixilens home">
           {logo ? (
@@ -52,10 +52,10 @@ export function SiteFooter() {
   );
 }
 
-export function SiteShell({ children }: { children: React.ReactNode }) {
+export function SiteShell({ children, floatingHeader = false }: { children: React.ReactNode; floatingHeader?: boolean }) {
   return (
     <main className="min-h-screen text-[#17130f]">
-      <SiteHeader />
+      <SiteHeader floating={floatingHeader} />
       {children}
       <SiteFooter />
     </main>

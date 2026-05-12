@@ -12,11 +12,11 @@ export default async function Home() {
   const gallerySlides = config.items.filter((item) => item.enabled && item.useInGallery).sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <SiteShell>
-      <section className="relative flex min-h-[calc(100vh-9rem)] items-center overflow-hidden md:min-h-[calc(100vh-10rem)]">
+    <SiteShell floatingHeader>
+      <section className="relative flex min-h-screen items-center overflow-hidden">
         <HeroSlideshow slides={heroSlides} duration={config.slideDurationSeconds} />
         <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-black/10 to-[#fbfaf7]/92" />
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 md:px-8">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-24 pt-52 md:px-8 md:pt-60">
           <div className="max-w-3xl">
             <p className="mb-5 text-xs uppercase tracking-[0.45em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]">Photography • Video • Live Streaming • Photobooth</p>
             <h1 className="text-5xl font-light leading-tight tracking-[0.08em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-7xl">Pixilens Photography</h1>
