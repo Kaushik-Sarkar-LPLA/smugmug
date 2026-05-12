@@ -25,7 +25,7 @@ export function SiteHeader({ floating = false }: { floating?: boolean }) {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-10 border-t border-[#17130f]/10 bg-white/75 px-5 py-10 text-center text-sm text-[#17130f]/55 shadow-xl backdrop-blur-2xl md:px-8">
+    <footer className="mt-10 border-t border-[#17130f]/10 px-5 py-10 text-center text-sm text-[#17130f]/55 shadow-xl backdrop-blur-2xl md:px-8 bg-[linear-gradient(110deg,rgba(255,255,255,0.82),rgba(255,232,197,0.62),rgba(220,238,255,0.58),rgba(244,221,255,0.54),rgba(255,255,255,0.8))]">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-wrap items-center justify-center gap-5 text-xs uppercase tracking-[0.22em]">
           <a href="http://facebook.com/pixilens" className="hover:text-[#17130f]">Facebook</a>
