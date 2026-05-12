@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Marcellus&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -48,7 +48,7 @@ a { color: inherit; text-decoration: none; }
 
 h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
 
-.font-hand { font-family: 'Marcellus', Georgia, serif; }
+.font-hand { font-family: 'Caveat', cursive; }
 
 .glass-panel {
   border: 1px solid rgba(40, 32, 22, 0.12);
@@ -111,6 +111,25 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   opacity: 0;
   transform: scale(1.08);
   animation: hero-slideshow var(--slideshow-duration, 130s) infinite;
+}
+
+.typewriter {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid rgba(255,255,255,0.85);
+  animation: typewriter 2.4s steps(118, end) 450ms both, typewriter-caret 650ms step-end infinite;
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes typewriter-caret {
+  0%, 100% { border-color: transparent; }
+  50% { border-color: rgba(255,255,255,0.85); }
 }
 
 .admin-label {
