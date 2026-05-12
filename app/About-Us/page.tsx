@@ -17,8 +17,10 @@ export default function AboutPage() {
   return (
     <SiteShell>
       <PageHero eyebrow="About" title="About Us" />
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-20 md:grid-cols-[0.85fr_1.15fr] md:px-8 md:items-start">
-        <AboutIcon />
+      <section className="mx-auto max-w-5xl px-5 pb-20 md:px-8">
+        <div className="mx-auto mb-14 max-w-4xl">
+          <AboutIcon />
+        </div>
         <div className="glass-panel rounded-2xl p-7 md:p-9">
           <div className="space-y-6 text-base leading-8 text-[#17130f]/72 md:text-lg">
             {paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
