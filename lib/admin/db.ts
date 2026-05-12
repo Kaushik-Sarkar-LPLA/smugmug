@@ -68,7 +68,7 @@ export async function ensureDatabase() {
     CREATE TABLE IF NOT EXISTS ${qname('folders')} (
       id text PRIMARY KEY,
       title text NOT NULL,
-      slug text NOT NULL UNIQUE,
+      slug text NOT NULL,
       description text NOT NULL DEFAULT '',
       parent_id text NOT NULL DEFAULT '',
       visibility text NOT NULL DEFAULT 'public',
@@ -85,7 +85,7 @@ export async function ensureDatabase() {
       id text PRIMARY KEY,
       folder_id text NOT NULL DEFAULT '',
       title text NOT NULL,
-      slug text NOT NULL UNIQUE,
+      slug text NOT NULL,
       description text NOT NULL DEFAULT '',
       visibility text NOT NULL DEFAULT 'public',
       sort_order integer NOT NULL DEFAULT 0,
@@ -127,6 +127,8 @@ export async function ensureDatabase() {
       updated_at timestamptz NOT NULL
     )
   `);
+  await db.query(`ALTER TABLE ${qname('folders')} DROP CONSTRAINT IF EXISTS folders_slug_key`);
+  await db.query(`ALTER TABLE ${qname('galleries')} DROP CONSTRAINT IF EXISTS galleries_slug_key`);
   for (const column of ['smugmug_uri text', 'original_url text', 'url_path text']) {
     await db.query(`ALTER TABLE ${qname('folders')} ADD COLUMN IF NOT EXISTS ${column}`);
     await db.query(`ALTER TABLE ${qname('galleries')} ADD COLUMN IF NOT EXISTS ${column}`);
