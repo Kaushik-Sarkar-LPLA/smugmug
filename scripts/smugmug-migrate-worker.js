@@ -121,7 +121,7 @@ async function upsertFolderFromWebPath(webUri) {
 }
 
 async function imageDownloadUrl(item) {
-  const uri = item?.Uris?.ImageDownload?.Uri || item?.Uris?.AlbumImageDownload?.Uri || item?.Uri?.replace('/album/', '/image/') + '!download';
+  const uri = item?.Uris?.ImageDownload?.Uri || item?.Uris?.AlbumImageDownload?.Uri || `/api/v2/image/${item.ImageKey}-0!download`;
   const data = (await smugGet(uri)).Response || {};
   return data.ImageDownload?.Url;
 }
