@@ -134,6 +134,39 @@ async function largestVideo(item) {
   return data.LargestVideo;
 }
 
+async function imageSizes(item) {
+  const uri = item?.Uris?.ImageSizes?.Uri || `/api/v2/image/${item.ImageKey}-0!sizes`;
+  const data = (await smugGet(uri)).Response || {};
+  return data.ImageSizes || data.ImageSize || data;
+}
+
+function findImageUrls(payload) {
+  const urls = [];
+  const visit = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (typeof value === 'object') {
+      if (typeof value.Url === 'string') urls.push({ url: value.Url, width: value.Width || value.width || 0, height: value.Height || value.height || 0 });
+      for (const nested of Object.values(value)) visit(nested);
+    }
+  };
+  visit(payload);
+  return urls.filter((entry) => /\.(jpe?g|png|webp)(\?|$)/i.test(entry.url));
+}
+
+async function downloadBuffer(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Download HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function archiveOriginal(buffer, galleryId, mediaId, title, extension) {
+  const relative = path.join('photo-originals', galleryId, `${mediaId}-${slugify(title)}${extension || '.jpg'}`);
+  const absolute = path.join(mediaRootDir(), relative);
+  if (!dryRun) { await fsp.mkdir(path.dirname(absolute), { recursive: true }); await fsp.writeFile(absolute, buffer); }
+  return absolute;
+}
+
 async function uploadToImgBB(buffer, name) {
   const form = new FormData();
   form.set('key', process.env.IMGBB_API_KEY);
@@ -167,12 +200,32 @@ async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
     } else {
       const url = await imageDownloadUrl(item);
       if (!url) throw new Error('Missing image download URL');
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Image download HTTP ${res.status}`);
-      const buffer = Buffer.from(await res.arrayBuffer());
+      const originalBuffer = await downloadBuffer(url);
       const uploadName = `smugmug--${galleryPath.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-') || galleryId}--${item.ImageKey || mediaId}`;
-      const uploaded = dryRun ? { url, display_url: url, delete_url: '', width: item.OriginalWidth, height: item.OriginalHeight } : await uploadToImgBB(buffer, uploadName);
-      await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'photo',$3,$4,$5,'public',$6,'imgbb',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'done',NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET migration_status='done',migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, uploaded.url, uploaded.display_url, uploaded.delete_url || null, item.FileName || `${mediaId}.jpg`, item.Format ? `image/${String(item.Format).toLowerCase()}` : 'image/jpeg', buffer.length, uploaded.width || item.OriginalWidth || null, uploaded.height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null]);
+      let uploaded;
+      let localOriginal = null;
+      let status = 'done';
+      try {
+        uploaded = dryRun ? { url, display_url: url, delete_url: '', width: item.OriginalWidth, height: item.OriginalHeight } : await uploadToImgBB(originalBuffer, uploadName);
+      } catch (uploadError) {
+        if (!String(uploadError.message || uploadError).includes('File too big')) throw uploadError;
+        const ext = path.extname(item.FileName || '.jpg') || '.jpg';
+        localOriginal = await archiveOriginal(originalBuffer, galleryId, mediaId, title, ext);
+        const candidates = findImageUrls(await imageSizes(item));
+        let fallback = null;
+        for (const candidate of candidates.sort((a, b) => (b.width || 0) - (a.width || 0))) {
+          try {
+            const candidateBuffer = await downloadBuffer(candidate.url);
+            if (candidateBuffer.length > 31_500_000) continue;
+            fallback = { candidate, buffer: candidateBuffer };
+            break;
+          } catch {}
+        }
+        if (!fallback) throw new Error('File too big - original archived locally but no ImgBB display fallback found');
+        uploaded = dryRun ? { url: fallback.candidate.url, display_url: fallback.candidate.url, delete_url: '', width: fallback.candidate.width, height: fallback.candidate.height } : await uploadToImgBB(fallback.buffer, `${uploadName}--display`);
+        status = 'done_with_local_original';
+      }
+      await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'photo',$3,$4,$5,'public',$6,'imgbb',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET public_url=excluded.public_url,display_url=excluded.display_url,delete_url=excluded.delete_url,local_path=excluded.local_path,size_bytes=excluded.size_bytes,width=excluded.width,height=excluded.height,migration_status=excluded.migration_status,migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, uploaded.url, uploaded.display_url, uploaded.delete_url || null, localOriginal, item.FileName || `${mediaId}.jpg`, item.Format ? `image/${String(item.Format).toLowerCase()}` : 'image/jpeg', originalBuffer.length, uploaded.width || item.OriginalWidth || null, uploaded.height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null, status]);
     }
     return 'done';
   } catch (error) {
@@ -189,7 +242,7 @@ async function saveState(patch) {
 
 async function progress() {
   await ensure();
-  const counts = await pool.query(`SELECT migration_status, count(*)::int FROM ${qname('media')} GROUP BY migration_status`);
+  const counts = await pool.query(`SELECT migration_status, count(*)::int FROM ${qname('media')} GROUP BY migration_status ORDER BY migration_status`);
   const state = await pool.query(`SELECT value FROM ${qname('migration_state')} WHERE key='smugmug'`);
   console.log(JSON.stringify({ state: state.rows[0]?.value || {}, media: counts.rows }, null, 2));
   await pool.end();
