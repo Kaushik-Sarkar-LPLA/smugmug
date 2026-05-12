@@ -15,12 +15,12 @@ export default async function Home() {
     <SiteShell>
       <section className="relative flex min-h-[calc(100vh-9rem)] items-center overflow-hidden md:min-h-[calc(100vh-10rem)]">
         <HeroSlideshow slides={heroSlides} duration={config.slideDurationSeconds} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/20 to-[#050505]/85" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-black/10 to-[#fbfaf7]/92" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 md:px-8">
           <div className="max-w-3xl">
-            <p className="mb-5 text-xs uppercase tracking-[0.45em] text-white/70">Photography • Video • Live Streaming • Photobooth</p>
-            <h1 className="text-5xl font-light leading-tight tracking-[0.08em] md:text-7xl">Pixilens Photography</h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/75 md:text-xl">
+            <p className="mb-5 text-xs uppercase tracking-[0.45em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]">Photography • Video • Live Streaming • Photobooth</p>
+            <h1 className="text-5xl font-light leading-tight tracking-[0.08em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-7xl">Pixilens Photography</h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] md:text-xl">
               Austin Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
@@ -34,7 +34,7 @@ export default async function Home() {
       <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
           {gallerySlides.map((slide, index) => (
-            <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white/5">
+            <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
               <Image
                 src={slide.displayUrl}
                 alt={slide.alt || `Pixilens gallery image ${index + 1}`}
