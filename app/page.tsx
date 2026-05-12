@@ -20,7 +20,7 @@ export default async function Home() {
           <div className="max-w-3xl">
             <p className="mb-5 text-xs uppercase tracking-[0.45em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]">Photography • Video • Live Streaming • Photobooth</p>
             <h1 className="text-5xl font-light leading-tight tracking-[0.08em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-7xl">Pixilens Photography</h1>
-            <p className="font-hand mt-7 max-w-3xl text-3xl leading-10 text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] md:text-5xl md:leading-[1.15]">
+            <p className="font-hand mt-7 max-w-2xl text-xl leading-8 tracking-[0.04em] text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] md:text-3xl md:leading-[1.25]">
               Austin Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">

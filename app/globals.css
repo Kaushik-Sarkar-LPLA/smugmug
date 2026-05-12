@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Parisienne&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Marcellus&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -48,7 +48,7 @@ a { color: inherit; text-decoration: none; }
 
 h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
 
-.font-hand { font-family: 'Parisienne', cursive; }
+.font-hand { font-family: 'Marcellus', Georgia, serif; }
 
 .glass-panel {
   border: 1px solid rgba(40, 32, 22, 0.12);
