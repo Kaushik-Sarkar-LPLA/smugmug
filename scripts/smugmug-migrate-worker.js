@@ -32,6 +32,10 @@ const limitAlbums = Number(args.limitAlbums || 0);
 const limitMedia = Number(args.limitMedia || 0);
 const onlyAlbumKey = args.albumKey || '';
 const dryRun = args.dryRun === 'true';
+const skipPathPatterns = (args.skipPath || process.env.SMUGMUG_SKIP_PATHS || '/Automatic-iOS-Uploads')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 const delayMs = Number(args.delayMs || 900);
 const smugDelayMs = Number(args.smugDelayMs || 350);
 
@@ -252,8 +256,12 @@ async function main() {
   if (args.progress === 'true') return progress();
   await ensure();
   const albums = await collect('/api/v2/user/pixilens!albums', 'Album');
-  const selected = albums.filter((album) => !onlyAlbumKey || album.Uri.endsWith(`/${onlyAlbumKey}`)).slice(0, limitAlbums || undefined);
-  await saveState({ totalAlbums: albums.length, selectedAlbums: selected.length, mode: onlyAlbumKey ? 'single' : 'all' });
+  const eligibleAlbums = albums.filter((album) => {
+    const pathname = album.WebUri ? new URL(album.WebUri).pathname : '';
+    return !skipPathPatterns.some((pattern) => pathname.startsWith(pattern));
+  });
+  const selected = eligibleAlbums.filter((album) => !onlyAlbumKey || album.Uri.endsWith(`/${onlyAlbumKey}`)).slice(0, limitAlbums || undefined);
+  await saveState({ totalAlbums: albums.length, skippedAlbums: albums.length - eligibleAlbums.length, selectedAlbums: selected.length, skipPathPatterns, mode: onlyAlbumKey ? 'single' : 'all' });
   let mediaDone = 0, mediaErrors = 0;
   for (let ai = 0; ai < selected.length; ai++) {
     const album = selected[ai];
