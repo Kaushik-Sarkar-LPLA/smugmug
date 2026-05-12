@@ -12,7 +12,7 @@ function loadEnv() {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
     const [key, ...rest] = trimmed.split('=');
-    if (!process.env[key]) process.env[key] = rest.join('=');
+    process.env[key] = rest.join('=');
   }
 }
 loadEnv();
