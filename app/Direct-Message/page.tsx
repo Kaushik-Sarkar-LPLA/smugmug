@@ -1,7 +1,6 @@
-import Image from 'next/image';
+import { ContactIcon } from '@/components/ContactIcon';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
-import { findSiteAsset } from '@/lib/priority-assets';
 
 export const metadata = {
   title: 'Direct Message - Pixilens Photography',
@@ -17,18 +16,16 @@ const contactActions = [
 ];
 
 export default function ContactPage() {
-  const qr = findSiteAsset('adobe-express-qr-code.png');
-
   return (
     <SiteShell>
       <PageHero eyebrow="Contact us" title="Direct Message">
         <p>Reach Pixilens directly for booking, event details, photography, video, live streaming, and photobooth questions.</p>
       </PageHero>
       <section className="mx-auto grid max-w-5xl gap-10 px-5 pb-20 md:grid-cols-[0.8fr_1.2fr] md:px-8 md:items-start">
-        {qr ? <Image src={qr.imgbb_display_url} alt="Pixilens contact QR code" width={qr.width} height={qr.height} className="mx-auto h-auto w-full max-w-xs" /> : null}
+        <ContactIcon />
         <div className="grid gap-4">
           {contactActions.map((action) => (
-            <a key={action.label} href={action.href} className="glass-button justify-start rounded-2xl px-6 py-5 text-left text-sm">
+            <a key={action.label} href={action.href} className="glass-button justify-start rounded-lg px-6 py-5 text-left text-sm">
               {action.label}
             </a>
           ))}
