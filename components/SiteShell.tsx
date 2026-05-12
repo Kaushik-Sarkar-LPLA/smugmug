@@ -1,12 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { PublicNav } from '@/components/nav/PublicNav';
 import { findSiteAsset } from '@/lib/priority-assets';
-import { contact, navItems } from '@/lib/site-content';
-
-function localHref(href: string) {
-  if (href.startsWith('/')) return href;
-  return href;
-}
+import { contact } from '@/lib/site-content';
 
 export function SiteHeader({ floating = false }: { floating?: boolean }) {
   const logo = findSiteAsset('i-9T6g4MC-XL_color1.png') ?? findSiteAsset('logo-main.png') ?? findSiteAsset('logo.png');
@@ -21,13 +17,7 @@ export function SiteHeader({ floating = false }: { floating?: boolean }) {
             <span className="text-3xl font-light tracking-[0.28em]">PIXILENS</span>
           )}
         </Link>
-        <nav className="grid w-full max-w-6xl grid-cols-2 gap-2 rounded-xl border border-[#17130f]/10 bg-white/60 p-2 text-center text-[10px] uppercase tracking-[0.14em] text-[#17130f]/72 shadow-xl backdrop-blur-xl sm:grid-cols-3 md:flex md:flex-wrap md:items-center md:justify-center md:text-xs">
-          {navItems.map((item) => (
-            <Link key={item.label} href={localHref(item.href)} className="rounded-lg px-3 py-2 transition hover:bg-white/90 hover:text-[#17130f] md:min-w-24">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <PublicNav />
       </div>
     </header>
   );
