@@ -115,16 +115,14 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
 
 .typewriter {
   display: inline;
-  background: linear-gradient(90deg, currentColor 0 0) 0 0 / 0 100% no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: typewriter-reveal 2.4s steps(118, end) 450ms forwards;
+  color: inherit;
+  opacity: 0;
+  animation: typewriter-reveal 600ms ease-out 350ms forwards;
 }
 
 @keyframes typewriter-reveal {
-  from { background-size: 0 100%; }
-  to { background-size: 100% 100%; }
+  from { opacity: 0; filter: blur(7px); }
+  to { opacity: 1; filter: blur(0); }
 }
 
 .admin-label {
