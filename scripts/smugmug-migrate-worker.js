@@ -32,6 +32,7 @@ const limitAlbums = Number(args.limitAlbums || 0);
 const limitMedia = Number(args.limitMedia || 0);
 const onlyAlbumKey = args.albumKey || '';
 const dryRun = args.dryRun === 'true';
+const retryErrors = args.retryErrors === 'true';
 const skipPathPatterns = (args.skipPath || process.env.SMUGMUG_SKIP_PATHS || '/Automatic-iOS-Uploads')
   .split(',')
   .map((value) => value.trim())
@@ -186,7 +187,11 @@ async function uploadToImgBB(buffer, name) {
 async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
   const mediaId = id('media', item.Uri || `${galleryId}:${item.ImageKey}`);
   const existing = await pool.query(`SELECT migration_status FROM ${qname('media')} WHERE id=$1`, [mediaId]);
-  if (existing.rowCount && existing.rows[0].migration_status === 'done') return 'skipped';
+  if (existing.rowCount) {
+    const status = existing.rows[0].migration_status;
+    if (status === 'done' || status === 'done_with_local_original') return 'skipped';
+    if (status === 'error' && !retryErrors) return 'skipped';
+  }
   const title = item.Title || item.FileName || item.ImageKey || mediaId;
   const mediaSlug = item.WebUri ? new URL(item.WebUri).pathname.split('/').filter(Boolean).pop() : slugify(title);
   try {
@@ -229,7 +234,7 @@ async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
         uploaded = dryRun ? { url: fallback.candidate.url, display_url: fallback.candidate.url, delete_url: '', width: fallback.candidate.width, height: fallback.candidate.height } : await uploadToImgBB(fallback.buffer, `${uploadName}--display`);
         status = 'done_with_local_original';
       }
-      await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'photo',$3,$4,$5,'public',$6,'imgbb',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET public_url=excluded.public_url,display_url=excluded.display_url,delete_url=excluded.delete_url,local_path=excluded.local_path,size_bytes=excluded.size_bytes,width=excluded.width,height=excluded.height,migration_status=excluded.migration_status,migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, uploaded.url, uploaded.display_url, uploaded.delete_url || null, localOriginal, item.FileName || `${mediaId}.jpg`, item.Format ? `image/${String(item.Format).toLowerCase()}` : 'image/jpeg', originalBuffer.length, uploaded.width || item.OriginalWidth || null, uploaded.height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null, status]);
+      await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'photo',$3,$4,$5,'public',$6,'imgbb',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET public_url=excluded.public_url,display_url=excluded.display_url,delete_url=excluded.delete_url,local_path=excluded.local_path,size_bytes=excluded.size_bytes,width=excluded.width,height=excluded.height,migration_status=excluded.migration_status,migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, uploaded.url, uploaded.display_url, uploaded.delete_url || null, localOriginal, item.FileName || `${mediaId}.jpg`, item.Format ? `image/${String(item.Format).toLowerCase()}` : 'image/jpeg', originalBuffer.length, uploaded.width || item.OriginalWidth || null, uploaded.height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null, status]);
     }
     return 'done';
   } catch (error) {
