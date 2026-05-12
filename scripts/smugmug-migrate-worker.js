@@ -22,9 +22,11 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
   return [k, v.length ? v.join('=') : 'true'];
 }));
 const schema = process.env.DATABASE_SCHEMA || 'pixilens_smugmug';
-const dataDir = process.env.ADMIN_DATA_DIR || path.resolve(__dirname, '..', 'data/admin');
+function dataDir() {
+  return process.env.ADMIN_DATA_DIR || path.resolve(__dirname, '..', 'data/admin');
+}
 function mediaRootDir() {
-  return process.env.MEDIA_ROOT || path.join(dataDir, 'media');
+  return process.env.MEDIA_ROOT || path.join(dataDir(), 'media');
 }
 const limitAlbums = Number(args.limitAlbums || 0);
 const limitMedia = Number(args.limitMedia || 0);
