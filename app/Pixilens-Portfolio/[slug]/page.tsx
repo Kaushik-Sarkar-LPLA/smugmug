@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { findPortfolioCategory, portfolioCategories } from '@/lib/portfolio';
@@ -36,7 +35,7 @@ export default async function PortfolioCategoryPage({ params }: { params: Promis
                   {gallery.images.map((image) => (
                     <figure key={image.webUri} className="mb-4 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
                       {image.url ? (
-                        <Image src={image.url} alt={image.fileName || gallery.title} width={image.width || 600} height={image.height || 400} className="h-auto w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
+                        <img src={image.url} alt={image.fileName || gallery.title} className="h-auto w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
                       ) : null}
                     </figure>
                   ))}

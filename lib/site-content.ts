@@ -5,7 +5,7 @@ export const navItems = [
   { label: 'Contact us', href: '/Direct-Message' },
   { label: 'About', href: '/About-Us' },
   { label: 'PHOTOBOOTH', href: '/Photobooth' },
-  { label: 'Get Started', href: 'https://www.honeybook.com/widget/pixilens_286464/cf_id/677c9cc799522e0019d717ac' },
+  { label: 'Get Started', href: '/Get-Started' },
 ];
 
 export const portfolioLinks = [
@@ -28,7 +28,7 @@ export const contact = {
   email: 'contact@pixilens.com',
   emailHref: 'mailto:contact@pixilens.com',
   messengerHref: 'http://m.me/pixilens',
-  honeybookHref: 'https://www.honeybook.com/widget/pixilens_286464/cf_id/677c9cc799522e0019d717ac',
+  honeybookHref: '/Get-Started',
   vcardHref: 'https://highvoltage.fashion/PixilensPhotographyAustin.vcf',
   releaseHref: 'http://release.pixilens.com/',
   bookHref: 'http://book.pixilens.com/',

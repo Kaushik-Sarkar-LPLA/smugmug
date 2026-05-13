@@ -12,7 +12,7 @@ export function SiteHeader({ floating = false }: { floating?: boolean }) {
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4">
         <Link href="/" className="flex items-center justify-center" aria-label="Pixilens home">
           {logo ? (
-            <Image src={logo.imgbb_display_url} alt="Pixilens Photography" width={260} height={125} className={`h-20 w-auto object-contain md:h-24 ${floating ? 'brightness-0 invert drop-shadow-[0_3px_18px_rgba(0,0,0,0.85)]' : ''}`} priority />
+            <Image src={logo.imgbb_display_url} alt="Pixilens Photography" width={260} height={125} className={`h-20 w-auto object-contain md:h-24 ${floating ? 'brightness-0 invert drop-shadow-[0_3px_18px_rgba(0,0,0,0.85)]' : 'logo-gold'}`} priority />
           ) : (
             <span className="text-3xl font-light tracking-[0.28em]">PIXILENS</span>
           )}

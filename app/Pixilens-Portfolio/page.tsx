@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
 import { portfolioCategories } from '@/lib/portfolio';
@@ -20,7 +19,7 @@ export default function PortfolioPage() {
           return (
             <Link key={category.path} href={category.path} className="glass-panel group overflow-hidden rounded-xl">
               <div className="relative aspect-[3/4] bg-white/60">
-                {cover?.url ? <Image src={cover.url} alt={category.label} fill className="object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100" sizes="(min-width: 1024px) 25vw, 50vw" /> : null}
+                {cover?.url ? <img src={cover.url} alt={category.label} className="h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100" /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                 <div className="absolute bottom-0 p-5">
                   <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{category.galleryCount || category.galleries.length} galleries</p>
