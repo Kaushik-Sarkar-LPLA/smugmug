@@ -122,7 +122,7 @@ export default async function PhotoboothEnquiryPage({ searchParams }: { searchPa
             <label className="public-label">Phone Number *<input name="phone" required className="public-input" placeholder="(000) 000-0000" /></label>
             <label className="public-label">Email *<input name="email" type="email" required className="public-input" placeholder="example@example.com" /></label>
             <label className="public-label">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Please Select</option>{eventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="public-label">Event Date *<input name="eventDate" required inputMode="numeric" pattern="[0-9/\-]*" className="public-input" placeholder="MM/DD/YYYY" /></label>
+            <label className="public-label">Event Date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
             <label className="public-label">Event Time<input name="eventTime" type="time" className="public-input public-date" /></label>
             <label className="public-label">Number of Hours *<select name="hours" required className="public-input public-select"><option value="">Please Select</option>{hourOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label">Venue Name *<input name="venueName" required className="public-input" placeholder="If home just write home" /></label>
