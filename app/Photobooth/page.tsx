@@ -69,8 +69,8 @@ export default function PhotoboothPage() {
         </div>
 
         <div className="mt-12 flex flex-wrap justify-center gap-4">
-          <a href={contact.rentalHref} className="glass-button">Photobooth rental form</a>
-          <a href={contact.honeybookHref} className="glass-button">Enquiry form</a>
+          <a href="/Photobooth-Enquiry" className="glass-button">Photobooth enquiry form</a>
+          <a href={contact.honeybookHref} className="glass-button">General enquiry form</a>
         </div>
       </section>
     </SiteShell>

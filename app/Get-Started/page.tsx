@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import nodemailer from 'nodemailer';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
+import { field, formatRows, htmlEscape, sendPixilensEmail } from '@/lib/email';
 
 export const metadata = {
   title: 'Get Started - Pixilens Photography',
@@ -64,34 +64,21 @@ type FormState = {
   message: string;
 };
 
-function field(formData: FormData, key: string) {
-  return String(formData.get(key) || '').trim();
-}
-
-function htmlEscape(value: string) {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
-}
-
 function formatText(data: FormState) {
   return `New Pixilens enquiry\n\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nServices: ${data.serviceTypes.join(', ')}\nEvent Type: ${data.eventType}\nEvent Date: ${data.eventDate}\nHow they heard about Pixilens: ${data.referral || 'Not provided'}\nEvent Address: ${data.eventAddress}\n\nEvent Details:\n${data.message || 'Not provided'}`;
 }
 
 function formatHtml(data: FormState) {
-  const row = (label: string, value: string) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #eadfce;color:#7a5b23;font-weight:600;">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #eadfce;">${htmlEscape(value)}</td></tr>`;
-  return `<div style="font-family:Arial,sans-serif;color:#17130f;line-height:1.5;"><h2 style="color:#a87921;">New Pixilens enquiry</h2><table style="border-collapse:collapse;width:100%;max-width:720px;">${row('Name', data.name)}${row('Email', data.email)}${row('Phone', data.phone)}${row('Services', data.serviceTypes.join(', '))}${row('Event Type', data.eventType)}${row('Event Date', data.eventDate)}${row('How they heard about Pixilens', data.referral || 'Not provided')}${row('Event Address', data.eventAddress)}</table><h3 style="color:#a87921;">Event Details</h3><p>${htmlEscape(data.message || 'Not provided').replaceAll('\n', '<br>')}</p></div>`;
-}
-
-function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!host || !user || !pass) return null;
-  return nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user, pass },
-  });
+  return `<div style="font-family:Arial,sans-serif;color:#17130f;line-height:1.5;"><h2 style="color:#a87921;">New Pixilens enquiry</h2><table style="border-collapse:collapse;width:100%;max-width:720px;">${formatRows([
+    ['Name', data.name],
+    ['Email', data.email],
+    ['Phone', data.phone],
+    ['Services', data.serviceTypes.join(', ')],
+    ['Event Type', data.eventType],
+    ['Event Date', data.eventDate],
+    ['How they heard about Pixilens', data.referral || 'Not provided'],
+    ['Event Address', data.eventAddress],
+  ])}</table><h3 style="color:#a87921;">Event Details</h3><p>${htmlEscape(data.message || 'Not provided').replaceAll('\n', '<br>')}</p></div>`;
 }
 
 async function sendEnquiry(formData: FormData) {
@@ -113,24 +100,15 @@ async function sendEnquiry(formData: FormData) {
     redirect('/Get-Started?status=missing');
   }
 
-  const transporter = createTransporter();
-  if (!transporter) redirect('/Get-Started?status=email-not-configured');
-
-  const from = process.env.SMTP_FROM || `Pixilens <${contact.email}>`;
-  const subject = `Pixilens enquiry from ${data.name}`;
-  const text = formatText(data);
-  const html = formatHtml(data);
-
-  await transporter.sendMail({ from, to: contact.email, replyTo: data.email, subject, text, html });
-  await transporter.sendMail({
-    from,
-    to: data.email,
-    subject: 'Pixilens received your enquiry',
-    text: `Hi ${data.name},\n\nThank you for contacting Pixilens. We received your enquiry and will get back to you soon.\n\n${text}`,
-    html: `<div style="font-family:Arial,sans-serif;color:#17130f;line-height:1.5;"><p>Hi ${htmlEscape(data.name)},</p><p>Thank you for contacting Pixilens. We received your enquiry and will get back to you soon.</p>${formatHtml(data)}</div>`,
+  const sent = await sendPixilensEmail({
+    toUser: data.email,
+    userName: data.name,
+    subject: `Pixilens enquiry from ${data.name}`,
+    text: formatText(data),
+    html: formatHtml(data),
   });
 
-  redirect('/Get-Started?status=sent');
+  redirect(sent ? '/Get-Started?status=sent' : '/Get-Started?status=email-not-configured');
 }
 
 export default async function GetStartedPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -178,9 +156,9 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
           </fieldset>
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <label className="public-label">Event Type *<select name="eventType" required className="public-input"><option value="">Select an option</option>{eventTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-            <label className="public-label">Event date *<input name="eventDate" type="date" required className="public-input" /></label>
-            <label className="public-label">How did you hear about us?<select name="referral" className="public-input"><option value="">Select an option</option>{referralOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+            <label className="public-label">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Select an option</option>{eventTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
+            <label className="public-label">Event date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
+            <label className="public-label">How did you hear about us?<select name="referral" className="public-input public-select"><option value="">Select an option</option>{referralOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
             <label className="public-label">Event Address *<input name="eventAddress" required className="public-input" placeholder="E.g. 742 Evergreen Terrace, Springfield" /></label>
           </div>
 

@@ -155,15 +155,36 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   width: 100%;
   border: 1px solid rgba(40,32,22,0.14);
   border-radius: 0.9rem;
-  background: rgba(255,255,255,0.82);
+  background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,248,236,0.82));
   padding: 0.85rem 1rem;
   color: #17130f;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
   outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 12px 30px rgba(71,52,24,0.08);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
-.public-input:focus { border-color: rgba(168,121,33,0.46); }
+.public-input:focus {
+  border-color: rgba(168,121,33,0.52);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 0 0 4px rgba(168,121,33,0.12), 0 16px 34px rgba(71,52,24,0.1);
+}
+
+.public-select {
+  appearance: none;
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,248,236,0.82)), linear-gradient(45deg, transparent 50%, #a87921 50%), linear-gradient(135deg, #a87921 50%, transparent 50%);
+  background-position: 0 0, calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 100% 100%, 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2.75rem;
+}
+
+.public-date { color-scheme: light; }
+.public-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.72;
+  filter: sepia(1) saturate(1.8) hue-rotate(350deg) brightness(0.72);
+}
 
 .logo-gold {
   filter: sepia(1) saturate(1.8) hue-rotate(350deg) brightness(0.72) contrast(1.05);
