@@ -31,6 +31,8 @@ function mediaRootDir() {
 const limitAlbums = Number(args.limitAlbums || 0);
 const limitMedia = Number(args.limitMedia || 0);
 const onlyAlbumKey = args.albumKey || '';
+const onlyPathPrefix = args.pathPrefix || '';
+const includeAlreadyDone = args.includeAlreadyDone === 'true';
 const dryRun = args.dryRun === 'true';
 const retryErrors = args.retryErrors === 'true';
 const skipPathPatterns = (args.skipPath || process.env.SMUGMUG_SKIP_PATHS || '/Automatic-iOS-Uploads')
@@ -189,7 +191,7 @@ async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
   const existing = await pool.query(`SELECT migration_status FROM ${qname('media')} WHERE id=$1`, [mediaId]);
   if (existing.rowCount) {
     const status = existing.rows[0].migration_status;
-    if (status === 'done' || status === 'done_with_local_original') return 'skipped';
+    if ((status === 'done' || status === 'done_with_local_original') && !includeAlreadyDone) return 'skipped';
     if (status === 'error' && !retryErrors) return 'skipped';
   }
   const title = item.Title || item.FileName || item.ImageKey || mediaId;
@@ -265,8 +267,11 @@ async function main() {
     const pathname = album.WebUri ? new URL(album.WebUri).pathname : '';
     return !skipPathPatterns.some((pattern) => pathname.startsWith(pattern));
   });
-  const selected = eligibleAlbums.filter((album) => !onlyAlbumKey || album.Uri.endsWith(`/${onlyAlbumKey}`)).slice(0, limitAlbums || undefined);
-  await saveState({ totalAlbums: albums.length, skippedAlbums: albums.length - eligibleAlbums.length, selectedAlbums: selected.length, skipPathPatterns, mode: onlyAlbumKey ? 'single' : 'all' });
+  const selected = eligibleAlbums.filter((album) => {
+    const pathname = album.WebUri ? new URL(album.WebUri).pathname : '';
+    return (!onlyAlbumKey || album.Uri.endsWith(`/${onlyAlbumKey}`)) && (!onlyPathPrefix || pathname.startsWith(onlyPathPrefix));
+  }).slice(0, limitAlbums || undefined);
+  await saveState({ totalAlbums: albums.length, skippedAlbums: albums.length - eligibleAlbums.length, selectedAlbums: selected.length, skipPathPatterns, pathPrefix: onlyPathPrefix || undefined, mode: onlyAlbumKey ? 'single' : (onlyPathPrefix ? 'path-prefix' : 'all') });
   let mediaDone = 0, mediaErrors = 0;
   for (let ai = 0; ai < selected.length; ai++) {
     const album = selected[ai];
