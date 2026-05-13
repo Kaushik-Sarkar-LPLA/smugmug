@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import { contact } from '@/lib/site-content';
 
 export function htmlEscape(value: string) {
@@ -9,32 +8,67 @@ export function field(formData: FormData, key: string) {
   return String(formData.get(key) || '').trim();
 }
 
-export function createTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.office365.com';
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!user || !pass) return null;
-  return nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    requireTLS: true,
-    auth: { user, pass },
-  });
-}
-
 export function formatRows(rows: Array<[string, string]>) {
   return rows.map(([label, value]) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #eadfce;color:#7a5b23;font-weight:600;">${htmlEscape(label)}</td><td style="padding:8px 12px;border-bottom:1px solid #eadfce;">${htmlEscape(value || 'Not provided')}</td></tr>`).join('');
 }
 
-export async function sendPixilensEmail({ toUser, userName, subject, text, html }: { toUser: string; userName: string; subject: string; text: string; html: string }) {
-  const transporter = createTransporter();
-  if (!transporter) return false;
+async function graphAccessToken() {
+  const tenantId = process.env.MS_GRAPH_TENANT_ID;
+  const clientId = process.env.MS_GRAPH_CLIENT_ID;
+  const clientSecret = process.env.MS_GRAPH_CLIENT_SECRET;
+  if (!tenantId || !clientId || !clientSecret) return null;
 
-  const from = process.env.SMTP_FROM || `Pixilens <${contact.email}>`;
-  await transporter.sendMail({ from, to: contact.email, replyTo: toUser, subject, text, html });
-  await transporter.sendMail({
-    from,
+  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: 'https://graph.microsoft.com/.default',
+      grant_type: 'client_credentials',
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Microsoft Graph token request failed: ${response.status}`);
+  const body = await response.json() as { access_token?: string };
+  if (!body.access_token) throw new Error('Microsoft Graph token response did not include an access token');
+  return body.access_token;
+}
+
+async function sendGraphMessage(accessToken: string, sender: string, message: { to: string; subject: string; text: string; html: string; replyTo?: string }) {
+  const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        subject: message.subject,
+        body: {
+          contentType: 'HTML',
+          content: message.html,
+        },
+        toRecipients: [{ emailAddress: { address: message.to } }],
+        replyTo: message.replyTo ? [{ emailAddress: { address: message.replyTo } }] : undefined,
+      },
+      saveToSentItems: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Microsoft Graph sendMail failed: ${response.status} ${errorText.slice(0, 500)}`);
+  }
+}
+
+export async function sendPixilensEmail({ toUser, userName, subject, text, html }: { toUser: string; userName: string; subject: string; text: string; html: string }) {
+  const sender = process.env.MS_GRAPH_SENDER || contact.email;
+  const accessToken = await graphAccessToken();
+  if (!accessToken) return false;
+
+  await sendGraphMessage(accessToken, sender, { to: contact.email, replyTo: toUser, subject, text, html });
+  await sendGraphMessage(accessToken, sender, {
     to: toUser,
     subject: 'Pixilens received your enquiry',
     text: `Hi ${userName},\n\nThank you for contacting Pixilens. We received your enquiry and will get back to you soon.\n\n${text}`,

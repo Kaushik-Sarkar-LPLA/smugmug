@@ -240,12 +240,10 @@ IMGBB_BASE_FOLDER=smugmug
 ADMIN_USERNAME=
 ADMIN_PASSWORD_HASH=
 SESSION_SECRET=
-SMTP_HOST=smtp.office365.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=contact@pixilens.com
-SMTP_PASS=
-SMTP_FROM="Pixilens <contact@pixilens.com>"
+MS_GRAPH_TENANT_ID=
+MS_GRAPH_CLIENT_ID=
+MS_GRAPH_CLIENT_SECRET=
+MS_GRAPH_SENDER=contact@pixilens.com
 SMUGMUG_API_KEY=
 SMUGMUG_API_SECRET=
 SMUGMUG_ACCESS_TOKEN=
@@ -255,6 +253,8 @@ SMUGMUG_BASE_URL=https://pixilens.com
 ```
 
 Admin password should be stored as a hash, not plaintext.
+
+Public enquiry forms send email through Microsoft Graph, not SMTP. The Microsoft Entra app registration must have Microsoft Graph application permission `Mail.Send` with admin consent granted. The configured sender mailbox is `contact@pixilens.com`, set through `MS_GRAPH_SENDER`.
 
 ## Phase 1 — Discovery and source capture
 
