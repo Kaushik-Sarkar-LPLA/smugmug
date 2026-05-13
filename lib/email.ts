@@ -10,14 +10,15 @@ export function field(formData: FormData, key: string) {
 }
 
 export function createTransporter() {
-  const host = process.env.SMTP_HOST;
+  const host = process.env.SMTP_HOST || 'smtp.office365.com';
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  if (!host || !user || !pass) return null;
+  if (!user || !pass) return null;
   return nodemailer.createTransport({
     host,
     port: Number(process.env.SMTP_PORT || 587),
     secure: process.env.SMTP_SECURE === 'true',
+    requireTLS: true,
     auth: { user, pass },
   });
 }
