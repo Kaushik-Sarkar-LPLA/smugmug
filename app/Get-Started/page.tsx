@@ -157,7 +157,7 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
             <label className="public-label">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Select an option</option>{eventTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-            <label className="public-label">Event date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
+            <label className="public-label">Event date *<input name="eventDate" required inputMode="numeric" pattern="[0-9/\-]*" className="public-input" placeholder="MM/DD/YYYY" /></label>
             <label className="public-label">How did you hear about us?<select name="referral" className="public-input public-select"><option value="">Select an option</option>{referralOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
             <label className="public-label">Event Address *<input name="eventAddress" required className="public-input" placeholder="E.g. 742 Evergreen Terrace, Springfield" /></label>
           </div>
