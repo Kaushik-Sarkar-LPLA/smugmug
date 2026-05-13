@@ -458,33 +458,83 @@ Run locally before deployment:
    - private recommended during migration.
    - public only if the user explicitly wants it.
 
-## Phase 8 — Coolify deployment to smugmug.pixilens.online
+## Phase 8 — Dual Coolify deployment
 
-1. Prepare deployment:
-   - Add Dockerfile for the Next.js app.
-   - Configure production `DATABASE_URL`, `MEDIA_ROOT`, `IMGBB_API_KEY`, `IMGBB_BASE_FOLDER`, `SESSION_SECRET`, and admin credentials in Coolify secrets/env.
-   - Bind-mount `/mnt/pixilens-media/media` into the app container for videos/backups/fallback media.
-   - Ensure upload size limits are compatible with expected photo/video sizes.
+Deploy every site change to both staging copies:
 
-2. On Coolify/priyanka server:
-   - Connect the GitHub repo.
-   - Create a new application for `smugmug`.
-   - Set domain to `smugmug.pixilens.online`.
-   - Configure HTTPS.
-   - Attach the media volume/bind mount.
-   - Run DB migrations.
+- Local/priyanka: `https://smugmug.pixilens.online`
+- Azure copy: `https://smugmug-az.pixilens.online`
 
-3. DNS for staging:
-   - Add `smugmug.pixilens.online` DNS record to the Coolify/priyanka server target.
-   - Wait for DNS/HTTPS validation.
+The Azure copy is a second deployment, not a replacement. Do not remove or stop the local/priyanka deployment when deploying Azure.
 
-4. Staging checks:
-   - Browse `https://smugmug.pixilens.online`.
-   - Run Playwright smoke tests against staging.
-   - Check image load performance and video playback.
-   - Verify all nav/folder/gallery/photo/video routes.
-   - Verify admin login, upload, download, delete, and create-gallery workflows.
-   - Verify `robots.txt` blocks indexing during staging.
+### Shared deployment requirements
+
+1. Keep `Dockerfile` for the Next.js app.
+2. The production runner image must include `next.config.ts`:
+
+   ```dockerfile
+   COPY --from=builder /app/next.config.ts ./next.config.ts
+   ```
+
+   This is required because `next start` loads image configuration at runtime. If `next.config.ts` is missing from the runner image, `_next/image` rejects ImgBB URLs with `"url" parameter is not allowed`, and logos/portfolio images disappear.
+3. Configure production `DATABASE_URL`, `MEDIA_ROOT`, `IMGBB_API_KEY`, `IMGBB_BASE_FOLDER`, `SESSION_SECRET`, and admin credentials in server-only env files/Coolify secrets.
+4. Bind-mount the media/admin data volume into the app container for videos/backups/fallback media.
+5. Ensure upload size limits are compatible with expected photo/video sizes.
+6. Never commit `.env`, API keys, OAuth tokens, admin secrets, ImgBB delete URLs/secrets, raw sensitive exports, database files, or private media.
+
+### Local/priyanka deployment
+
+- Coolify project: `Pixilens` (`i0c8gk8kwkgw008ogk4wgogs`)
+- Coolify app: `pixilens-smugmug` (`a4gcggkck44cokoc08os84sw`)
+- Routed runtime container: `smugmug-managed`
+- Domain: `https://smugmug.pixilens.online`
+- Deploy source on `priyanka`: `/home/priyanka/pixilens-smugmug-migrator`
+- Env/cert/admin data directory: `/home/priyanka/pixilens-smugmug-admin`
+- Container network: `coolify`
+- App port: `3000`
+- Host port: `3010`
+
+Typical local deploy flow:
+
+```bash
+ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && sudo docker build -t pixilens-smugmug:latest .'
+ssh priyanka 'sudo docker rm -f smugmug-managed >/dev/null 2>&1; sudo docker run -d --name smugmug-managed --restart unless-stopped --network coolify -p 3010:3000 --env-file /home/priyanka/pixilens-smugmug-admin/.env -e MEDIA_ROOT=/admin-data/media -e ADMIN_DATA_DIR=/admin-data -v /home/priyanka/pixilens-smugmug-admin/data:/admin-data -v /home/priyanka/pixilens-smugmug-admin/certs:/app/certs --label traefik.enable=true --label traefik.http.middlewares.gzip.compress=true --label traefik.http.routers.http-0-smugmug-managed.entryPoints=http --label traefik.http.routers.http-0-smugmug-managed.middlewares=gzip --label traefik.http.routers.http-0-smugmug-managed.rule="Host(`smugmug.pixilens.online`) && PathPrefix(`/`)" --label traefik.http.routers.http-0-smugmug-managed.service=http-0-smugmug-managed --label traefik.http.services.http-0-smugmug-managed.loadbalancer.server.port=3000 pixilens-smugmug:latest'
+```
+
+### Azure deployment
+
+- Coolify server: `Azure-UBKS-Server` (`j8g4w8gw4wo4gooo0c8404sg`)
+- Azure public IP: `9.234.42.243`
+- Coolify app: `pixilens-smugmug-azure` (`l08cogcggk4oksg0kwwos44k`)
+- Domain: `https://smugmug-az.pixilens.online`
+- DNS: Cloudflare-proxied A record `smugmug-az.pixilens.online -> 9.234.42.243`
+- Coolify CLI context on `priyanka`: `Coolify1`
+
+Typical Azure deploy flow:
+
+```bash
+ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start l08cogcggk4oksg0kwwos44k --format json'
+ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app deployments list l08cogcggk4oksg0kwwos44k --format table'
+```
+
+### Post-deploy checks
+
+Run these checks after deploying both copies:
+
+```bash
+curl -I https://smugmug.pixilens.online
+curl -I https://smugmug-az.pixilens.online
+```
+
+Then verify representative optimized images on both domains, including homepage logo/site assets and `/Pixilens-Portfolio`. `_next/image` requests for ImgBB assets should return `200` with an image content type.
+
+Also verify:
+
+- Homepage navigation and hero/gallery images.
+- `/Pixilens-Portfolio` portfolio cards/images.
+- `/Photobooth` and generated flyer asset.
+- Admin login/upload/download/delete workflows when admin behavior changed.
+- `robots.txt` blocks indexing during staging.
 
 ## Phase 9 — Final root-domain migration
 
