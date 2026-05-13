@@ -28,11 +28,11 @@ export const contact = {
   email: 'contact@pixilens.com',
   emailHref: 'mailto:contact@pixilens.com',
   messengerHref: 'http://m.me/pixilens',
-  honeybookHref: '/Get-Started',
+  honeybookHref: '/Booking-Form',
   vcardHref: 'https://highvoltage.fashion/PixilensPhotographyAustin.vcf',
-  releaseHref: 'http://release.pixilens.com/',
-  bookHref: 'http://book.pixilens.com/',
-  rentalHref: 'http://rental.pixilens.com/',
+  releaseHref: '/Booking-Form',
+  bookHref: '/Booking-Form',
+  rentalHref: '/Photobooth-Enquiry',
 };
 
 export const services = [
