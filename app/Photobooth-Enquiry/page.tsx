@@ -1,64 +1,55 @@
-import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
-import { field, formatRows, htmlEscape, sendPixilensEmail } from '@/lib/email';
-import { findSiteAsset } from '@/lib/priority-assets';
+import { field, formatRows, sendPixilensEmail } from '@/lib/email';
+import { PhotoboothRentalForm } from './PhotoboothRentalForm';
 
 export const metadata = {
   title: 'Photo Booth Rental - Pixilens Photography',
 };
 
-const eventTypes = ['Wedding', 'Birthday Party', 'Quinceanera', 'Sweet 16', '18th Debut', '1st Birthday', 'Baby Shower', 'Bar & Bat Mitzvah', 'Prom', 'Graduation', 'Christening', 'Corporate', 'Halloween', 'Christmas', 'Fundraiser', 'Festival', 'Other'];
-const setupOptions = ['Indoors', 'Outdoors', 'Both'];
-const paymentOptions = ['Zelle - 737 231 0033 (Pixilens LLC) [Preferred]', 'CashApp - https://cash.app/$pixilensphotography'];
-const attendantOptions = ['Yes', 'No'];
-const hourOptions = ['2 hours', '3 hours', '4 hours', '5 hours', '6 hours'];
-const areas = ['Austin and Surrounding cities (TX)', 'Phoenix and Surrounding cities (AZ)'];
-const boothTypes = ['360 Photobooth', 'Video Guest Book', 'Photobooth (IPAD)'];
+const agreementText = `I. THE PARTIES
+This Photo Booth Contract (“Agreement”) is between the client submitting this form and Photo Booth Provider: Pixilens Photography, Sole proprietor Priyanka Sarkar.
 
-const boothImageMap = [
-  { type: '360 Photobooth', label: '360 Photobooth', asset: findSiteAsset('360photobooth.png') },
-  { type: 'Video Guest Book', label: 'Video Guest Book', asset: findSiteAsset('videobooth.png') },
-  { type: 'Photobooth (IPAD)', label: 'Photobooth (IPAD)', asset: findSiteAsset('PHOTOBOOTH BY PIXILENS.png') },
-].flatMap((item) => {
-  const imageUrl = item.asset?.imgbb_display_url || item.asset?.imgbb_url;
-  return imageUrl ? [{ ...item, imageUrl }] : [];
-});
+II. PHOTO BOOTH
+The Provider agrees to lease the selected photo booth service for the event. Depending on the selected package, this may include iPad Photo Booth with backgrounds, backdrop stand and props, Video Guestbook, 360 Photobooth, prints, and/or attendant services.
 
-const backdropOptions = [
-  { label: 'Gold Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/81xxS8uMjmL._AC_SL1200_.66ce8d12d47508.12274019.jpg' },
-  { label: 'Silver Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/silver.66ce8d9c48c285.05943534.jpg' },
-  { label: 'Rose Gold Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/81oOX21YqIL._AC_SL1500_.67760740d309c6.98407710.jpg' },
-  { label: 'Blue Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/81km_dA1TqL._AC_SL1100_.66ce8de2aee3e3.68626385.jpg' },
-  { label: 'Black Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/91UqOFGfBNL._AC_SL1500_.66ce8e3db72e69.92660219.jpg' },
-  { label: 'Red Sequin', src: 'https://www.jotform.com/uploads/pixilens/form_files/91BcddKHQSL._AC_SL1500_.66ce8e586d5001.15064880.jpg' },
-];
+III. EVENT INFORMATION
+The Provider will arrive before the event time to set up the Photo Booth. The client is responsible for venue access, appropriate setup space, shelter, power, and any venue requirements.
 
-const agreementText = `Photo Booth Provider: Pixilens Photography, Sole proprietor Priyanka Sarkar.
+IV. PAYMENT
+Rent per hour for Video Guestbook and iPad Photobooth starts at $150. Rent per hour for iPad Photobooth with unlimited prints starts at $250 with attendant. Rent per hour for 360 Photobooth starts at $225. Discounts are separately discussed and provided on total cost if agreed. A non-refundable deposit of $50 is required. The balance, less any deposit, is due on the date of the event or prior. Any overage in time may be billed at $175/hour and must be paid by the end of the event. If the event ends earlier than expected, no refund will be given. Any date change request must be made in writing at least 15 days before the event and is subject to availability.
 
-Pixilens will deliver, set up, and remove the photo booth from the event location. The client will arrange appropriate space, access, shelter, power, and setup conditions.
+V. TERMS AND CONDITIONS
+The Provider will deliver, set up, and remove the Photo Booth from the event location. The client will arrange appropriate space, shelter, power, and access. The client is responsible for any damage or loss to the Provider’s equipment due to misuse by the client or guests, theft, fire, flood, earthquake, unsafe weather, or other event conditions. If only partial services can be provided due to conditions beyond reasonable control, payments may be negotiated on a prorated basis. If the Provider fails to provide a fully operational Photo Booth for the event, the client’s remedy will be a refund for the unavailable service.
 
-The client pays a non-refundable $50 deposit to reserve the event date. The remaining balance is due before setup or on the event date. Video guestbook and iPad Photobooth rentals start at $150 per hour. iPad Photobooth with unlimited prints and attendant starts at $250 per hour. 360 Photobooth starts at $225 per hour. Discounts or custom pricing must be agreed separately.
+VI. RIGHTS TO PHOTOS AND MEDIA
+Rights to media generated by the Photo Booth belong to Pixilens Photography. Pixilens may make media available online for the client and may use media for promotional purposes unless otherwise agreed in writing.
 
-Any overage in time may be billed at $175 per hour and must be paid by the end of the event. If the event ends earlier than expected, no refund is given. Date change requests must be made in writing at least 15 days before the event and are subject to availability.
+VII. ADDITIONAL TERMS
+This is a digital photobooth with text/email delivery. Prints depend on the selected package. Delivery is subject to internet availability. If mobile signal or venue Wi-Fi is not available, text/emails may queue and send when the booth reconnects.
 
-The client is responsible for damage or loss to Pixilens equipment caused by misuse, guests, unsafe conditions, theft, fire, flood, earthquake, or similar causes. Pixilens may stop operation if weather or event conditions are unsafe for equipment or attendees.
+VIII. ENTIRE AGREEMENT
+This form represents the rental agreement for the selected event. No modification or amendment is effective unless agreed in writing.
 
-All media generated by the photo booth is the property of Pixilens Photography. Pixilens may make media available to the client online and may use event media for promotional purposes unless otherwise agreed in writing.
-
-This is a digital photobooth with text/email delivery. Prints depend on the selected package. Delivery is subject to internet availability. If mobile or venue Wi-Fi is not available, text/emails may queue and send when the booth reconnects.
-
-This agreement is governed by the laws of the state where the event takes place. By submitting this form, the client confirms that the information is accurate and agrees to the photo booth rental terms.`;
+IX. EXECUTION
+By submitting this form, the client confirms that all information is accurate, that they are authorized to execute this agreement, and that they agree to the photo booth rental terms.`;
 
 type PhotoboothState = {
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
   eventType: string;
+  otherEventType: string;
   eventDate: string;
+  eventTime: string;
   venueName: string;
-  venueAddress: string;
+  venueStreet: string;
+  venueStreet2: string;
+  venueCity: string;
+  venueState: string;
+  venueZip: string;
   setupLocation: string;
   backdrop: string;
   galleryText: string;
@@ -71,31 +62,54 @@ type PhotoboothState = {
   photoboothType: string;
 };
 
+function fullName(data: PhotoboothState) {
+  return `${data.firstName} ${data.lastName}`.trim();
+}
+
+function resolvedEventType(data: PhotoboothState) {
+  return data.eventType === 'Other' ? data.otherEventType : data.eventType;
+}
+
+function venueAddress(data: PhotoboothState) {
+  return [data.venueStreet, data.venueStreet2, data.venueCity, data.venueState, data.venueZip].filter(Boolean).join(', ');
+}
+
+function hoursMinutes(numberOfHours: string) {
+  const match = numberOfHours.match(/^(\d+)/);
+  return match ? String(Number(match[1]) * 60) : '';
+}
+
 function requiresBackdrop(photoboothType: string) {
-  return photoboothType !== '360 Photobooth';
+  return photoboothType === 'Photobooth (IPAD)';
+}
+
+function requiresAttendant(photoboothType: string) {
+  return photoboothType === 'Photobooth (IPAD)';
 }
 
 function formatText(data: PhotoboothState) {
-  return `New Pixilens photo booth rental enquiry\n\nName: ${data.name}\nPhone Number: ${data.phone}\nEmail: ${data.email}\nEvent Type: ${data.eventType}\nEvent Date: ${data.eventDate}\nVenue Name: ${data.venueName}\nVenue Address: ${data.venueAddress}\nWhere will we be setting up?: ${data.setupLocation}\nChoose A Backdrop: ${data.backdrop || 'Not required for 360 Photobooth'}\nOnline Gallery Text: ${data.galleryText}\nAgreement: ${data.agreement}\nSignature: ${data.signature || 'Not provided'}\nPayment Method: ${data.paymentMethod}\nAttendant required?: ${data.attendantRequired}\nNumber of Hours: ${data.numberOfHours}\nSelect Area: ${data.area}\nPhotobooth Type: ${data.photoboothType}`;
+  return `New Pixilens photo booth rental enquiry\n\nName: ${fullName(data)}\nPhone Number: ${data.phone}\nEmail: ${data.email}\nEvent Type: ${resolvedEventType(data)}\nEvent Date: ${data.eventDate}\nEvent Time: ${data.eventTime}\nVenue Name: ${data.venueName}\nVenue Address: ${venueAddress(data)}\nWhere will we be setting up?: ${data.setupLocation}\nChoose A Backdrop: ${data.backdrop || 'Not shown for selected booth type'}\nOnline Gallery Text: ${data.galleryText}\nAgreement: ${data.agreement}\nSignature: ${data.signature || 'Not provided'}\nPayment Method: ${data.paymentMethod}\nAttendant required?: ${data.attendantRequired || 'Not shown for selected booth type'}\nNumber of Hours: ${data.numberOfHours}\nHours Minutes: ${hoursMinutes(data.numberOfHours)}\nSelect Area: ${data.area}\nPhotobooth Type: ${data.photoboothType}`;
 }
 
 function formatHtml(data: PhotoboothState) {
   return `<div style="font-family:Arial,sans-serif;color:#17130f;line-height:1.5;"><h2 style="color:#a87921;">New Pixilens photo booth rental enquiry</h2><table style="border-collapse:collapse;width:100%;max-width:760px;">${formatRows([
-    ['Name', data.name],
+    ['Name', fullName(data)],
     ['Phone Number', data.phone],
     ['Email', data.email],
-    ['Event Type', data.eventType],
+    ['Event Type', resolvedEventType(data)],
     ['Event Date', data.eventDate],
+    ['Event Time', data.eventTime],
     ['Venue Name', data.venueName],
-    ['Venue Address', data.venueAddress],
+    ['Venue Address', venueAddress(data)],
     ['Where will we be setting up?', data.setupLocation],
-    ['Choose A Backdrop', data.backdrop || 'Not required for 360 Photobooth'],
+    ['Choose A Backdrop', data.backdrop || 'Not shown for selected booth type'],
     ['Online Gallery Text', data.galleryText],
     ['Agreement', data.agreement],
     ['Signature', data.signature || 'Not provided'],
     ['Payment Method', data.paymentMethod],
-    ['Attendant required?', data.attendantRequired],
+    ['Attendant required?', data.attendantRequired || 'Not shown for selected booth type'],
     ['Number of Hours', data.numberOfHours],
+    ['Hours Minutes', hoursMinutes(data.numberOfHours)],
     ['Select Area', data.area],
     ['Photobooth Type', data.photoboothType],
   ])}</table></div>`;
@@ -105,13 +119,20 @@ async function sendPhotoboothEnquiry(formData: FormData) {
   'use server';
 
   const data: PhotoboothState = {
-    name: field(formData, 'name'),
+    firstName: field(formData, 'firstName'),
+    lastName: field(formData, 'lastName'),
     phone: field(formData, 'phone'),
     email: field(formData, 'email'),
     eventType: field(formData, 'eventType'),
+    otherEventType: field(formData, 'otherEventType'),
     eventDate: field(formData, 'eventDate'),
+    eventTime: field(formData, 'eventTime'),
     venueName: field(formData, 'venueName'),
-    venueAddress: field(formData, 'venueAddress'),
+    venueStreet: field(formData, 'venueStreet'),
+    venueStreet2: field(formData, 'venueStreet2'),
+    venueCity: field(formData, 'venueCity'),
+    venueState: field(formData, 'venueState'),
+    venueZip: field(formData, 'venueZip'),
     setupLocation: field(formData, 'setupLocation'),
     backdrop: field(formData, 'backdrop'),
     galleryText: field(formData, 'galleryText'),
@@ -124,14 +145,14 @@ async function sendPhotoboothEnquiry(formData: FormData) {
     photoboothType: field(formData, 'photoboothType'),
   };
 
-  if (!data.name || !data.phone || !data.email || !data.eventType || !data.eventDate || !data.venueName || !data.venueAddress || !data.setupLocation || (requiresBackdrop(data.photoboothType) && !data.backdrop) || !data.galleryText || data.agreement !== 'Yes I Agree' || !data.paymentMethod || !data.attendantRequired || !data.numberOfHours || !data.area || !data.photoboothType) {
+  if (!data.firstName || !data.lastName || !data.phone || !data.email || !data.eventType || (data.eventType === 'Other' && !data.otherEventType) || !data.eventDate || !data.eventTime || !data.venueName || !data.venueStreet || !data.venueCity || !data.venueState || !data.venueZip || !data.setupLocation || (requiresBackdrop(data.photoboothType) && !data.backdrop) || !data.galleryText || data.agreement !== 'Yes I Agree' || !data.paymentMethod || (requiresAttendant(data.photoboothType) && !data.attendantRequired) || !data.numberOfHours || !data.area || !data.photoboothType) {
     redirect('/Photobooth-Enquiry?status=missing');
   }
 
   const sent = await sendPixilensEmail({
     toUser: data.email,
-    userName: data.name,
-    subject: `Pixilens photo booth rental from ${data.name}`,
+    userName: fullName(data),
+    subject: `Pixilens photo booth rental from ${fullName(data)}`,
     text: formatText(data),
     html: formatHtml(data),
   });
@@ -149,70 +170,9 @@ export default async function PhotoboothEnquiryPage({ searchParams }: { searchPa
 
       <section className="mx-auto max-w-5xl px-5 pb-20 md:px-8">
         {params.status === 'sent' ? <div className="glass-panel mb-8 rounded-xl p-5 text-center text-[#17130f]/75">Thank you. Your photo booth rental form was sent to Pixilens and a confirmation email was sent to you.</div> : null}
-        {params.status === 'missing' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Please fill out all required fields before sending. Backdrop is required for non-360 booth rentals.</div> : null}
+        {params.status === 'missing' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Please fill out all required fields before sending.</div> : null}
         {params.status === 'email-not-configured' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Email sending is not configured yet. Please email {contact.email} directly.</div> : null}
-
-        <form action={sendPhotoboothEnquiry} className="glass-panel rounded-xl p-6 md:p-9">
-          <div className="grid gap-5 md:grid-cols-2">
-            <label className="public-label">Select Area *<select name="area" required className="public-input public-select"><option value="">Please Select</option>{areas.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="public-label">Photobooth Type *<select name="photoboothType" required className="public-input public-select"><option value="">Please Select</option>{boothTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-          </div>
-
-          <div className="mt-8">
-            <p className="public-label mb-3">Booth examples</p>
-            <div className="grid gap-4 md:grid-cols-3">
-              {boothImageMap.map((item) => (
-                <div key={item.type} className="rounded-xl border border-[#281f16]/10 bg-white/55 p-3 text-center text-sm text-[#17130f]/70">
-                  <div className="relative mx-auto aspect-[3/4] max-h-64 overflow-hidden rounded-lg bg-white/70">
-                    <Image src={item.imageUrl} alt={item.label} fill className="object-contain" sizes="(min-width: 768px) 30vw, 90vw" />
-                  </div>
-                  <p className="gold-text mt-3">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <label className="public-label md:col-span-2">Name *<input name="name" required className="public-input" /></label>
-            <label className="public-label">Phone Number *<input name="phone" required className="public-input" placeholder="(000) 000-0000" /></label>
-            <label className="public-label">Email *<input name="email" type="email" required className="public-input" /></label>
-            <label className="public-label">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Please Select</option>{eventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="public-label">Event Date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
-            <label className="public-label">Number of Hours *<select name="numberOfHours" required className="public-input public-select"><option value="">Please Select</option>{hourOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="public-label">Venue Name *<input name="venueName" required className="public-input" placeholder="If home just write home" /></label>
-            <label className="public-label">Where will we be setting up? *<select name="setupLocation" required className="public-input public-select"><option value="">Please Select</option>{setupOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-          </div>
-
-          <fieldset className="mt-8">
-            <legend className="public-label mb-3">Choose A Backdrop</legend>
-            <p className="mb-4 text-sm leading-6 text-[#17130f]/55">Required for non-360 booth rentals. If you select 360 Photobooth, backdrop is optional.</p>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {backdropOptions.map((item) => (
-                <label key={item.label} className="group cursor-pointer rounded-xl border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/70 transition hover:-translate-y-1 hover:shadow-lg">
-                  <input name="backdrop" value={item.label} type="radio" className="peer sr-only" />
-                  <span className="block overflow-hidden rounded-lg border border-transparent bg-white/80 peer-checked:border-[#a87921] peer-checked:ring-2 peer-checked:ring-[#a87921]/30">
-                    <img src={item.src} alt={item.label} className="h-48 w-full object-cover" />
-                  </span>
-                  <span className="gold-text mt-3 block text-center peer-checked:font-semibold">{item.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <label className="public-label mt-7 block">Venue Address *<textarea name="venueAddress" required className="public-input min-h-28" /></label>
-          <label className="public-label mt-7 block">What do you want the text to say in the Online Gallery? *<textarea name="galleryText" required className="public-input min-h-28" placeholder="Ex. Tommy & Linda's Wedding" /></label>
-          <label className="public-label mt-7 block">Payment Method for Deposit of $50. Rest of the remaining payment should be done prior to setting up Photobooth at the Event. We accept cash also for balance dues. *<select name="paymentMethod" required className="public-input public-select"><option value="">Please Select</option>{paymentOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label className="public-label mt-7 block">Attendant required? Extra $50 per hour *<select name="attendantRequired" required className="public-input public-select"><option value="">Please Select</option>{attendantOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-
-          <div className="mt-8 rounded-xl border border-[#281f16]/10 bg-white/55 p-5 text-sm leading-7 text-[#17130f]/68">
-            <p className="font-art gold-text text-xl">Photobooth rental agreement</p>
-            <p className="mt-3 whitespace-pre-line">{agreementText}</p>
-            <label className="mt-5 flex items-center gap-3 text-[#17130f]/78"><input name="agreement" value="Yes I Agree" type="checkbox" required className="accent-[#a87921]" /> Yes I Agree</label>
-          </div>
-
-          <label className="public-label mt-7 block">Sign here<input name="signature" className="public-input" placeholder="Type your full name as signature" /></label>
-          <button className="glass-button mt-7" type="submit">Submit</button>
-        </form>
+        <PhotoboothRentalForm action={sendPhotoboothEnquiry} agreementText={agreementText} />
       </section>
     </SiteShell>
   );
