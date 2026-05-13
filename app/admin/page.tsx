@@ -6,6 +6,8 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminPage() {
   const config = await getHomepageConfig();
   const heroCount = config.items.filter((item) => item.useInHero && item.enabled).length;
