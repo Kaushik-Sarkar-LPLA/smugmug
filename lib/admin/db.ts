@@ -6,6 +6,10 @@ let pool: Pool | null = null;
 let initialized = false;
 
 export function databaseUrl() {
+  return process.env.DATABASE_URL || '';
+}
+
+export function databaseUrlWithoutSsl() {
   return (process.env.DATABASE_URL || '').replace(/[?&]sslmode=[^&]+/, '');
 }
 
@@ -45,13 +49,15 @@ function sslConfig() {
       return { rejectUnauthorized: false };
     }
   }
-  if ((process.env.POSTGRES_SSLMODE || process.env.SSL_MODE || '').toLowerCase() || databaseUrl().includes('sslmode=')) return { rejectUnauthorized: false };
+  if ((process.env.POSTGRES_SSLMODE || process.env.SSL_MODE || '').toLowerCase() || (process.env.DATABASE_URL || '').includes('sslmode=')) return { rejectUnauthorized: false };
   return undefined;
 }
 
 export function getPool() {
   if (!pool) {
-    pool = new Pool({ connectionString: databaseUrl(), ssl: sslConfig() });
+    const ssl = sslConfig();
+    const connectionString = ssl ? databaseUrlWithoutSsl() : databaseUrl();
+    pool = new Pool({ connectionString, ssl });
   }
   return pool;
 }
