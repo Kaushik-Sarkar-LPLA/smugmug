@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
 import { getPortfolioGalleries } from '@/lib/portfolio-db';
 
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Portfolio - Pixilens Photography',
 };

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { findPortfolioGallery, getPortfolioGalleries } from '@/lib/portfolio-db';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   try {
     const galleries = await getPortfolioGalleries();
