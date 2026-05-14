@@ -7,7 +7,10 @@ export const metadata = {
 };
 
 export default async function PortfolioPage() {
-  const galleries = await getPortfolioGalleries();
+  let galleries: Awaited<ReturnType<typeof getPortfolioGalleries>> = [];
+  try {
+    galleries = await getPortfolioGalleries();
+  } catch {} // DB not available yet
   const hasGalleries = galleries.length > 0;
 
   return (

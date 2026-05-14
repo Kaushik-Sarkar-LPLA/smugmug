@@ -29,16 +29,20 @@ export function qname(table: string) {
 function sslConfig() {
   const certsDir = process.env.SSL_CERTS_DIR;
   if (certsDir) {
-    const ca = path.join(certsDir, 'ca.crt');
-    const cert = path.join(certsDir, 'client_grabber_user.crt');
-    const key = path.join(certsDir, 'client_grabber_user.key');
-    if (fs.existsSync(ca) && fs.existsSync(cert) && fs.existsSync(key)) {
-      return {
-        rejectUnauthorized: false,
-        ca: fs.readFileSync(ca, 'utf8'),
-        cert: fs.readFileSync(cert, 'utf8'),
-        key: fs.readFileSync(key, 'utf8'),
-      };
+    try {
+      const ca = path.join(certsDir, 'ca.crt');
+      const cert = path.join(certsDir, 'client_grabber_user.crt');
+      const key = path.join(certsDir, 'client_grabber_user.key');
+      if (fs.existsSync(ca) && fs.existsSync(cert) && fs.existsSync(key)) {
+        return {
+          rejectUnauthorized: false,
+          ca: fs.readFileSync(ca, 'utf8'),
+          cert: fs.readFileSync(cert, 'utf8'),
+          key: fs.readFileSync(key, 'utf8'),
+        };
+      }
+    } catch {
+      return { rejectUnauthorized: false };
     }
   }
   if ((process.env.POSTGRES_SSLMODE || '').toLowerCase() || databaseUrl().includes('sslmode=')) return { rejectUnauthorized: false };

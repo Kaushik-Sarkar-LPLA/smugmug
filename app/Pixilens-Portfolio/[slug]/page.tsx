@@ -3,19 +3,27 @@ import { PageHero, SiteShell } from '@/components/SiteShell';
 import { findPortfolioGallery, getPortfolioGalleries } from '@/lib/portfolio-db';
 
 export async function generateStaticParams() {
-  const galleries = await getPortfolioGalleries();
-  return galleries.map((g) => ({ slug: g.slug }));
+  try {
+    const galleries = await getPortfolioGalleries();
+    return galleries.map((g) => ({ slug: g.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const gallery = await findPortfolioGallery(slug);
+  let gallery: Awaited<ReturnType<typeof findPortfolioGallery>> = null;
+  try { gallery = await findPortfolioGallery(slug); } catch {}
   return { title: `${gallery?.title ?? 'Portfolio'} - Pixilens Photography` };
 }
 
 export default async function PortfolioGalleryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const gallery = await findPortfolioGallery(slug);
+  let gallery: Awaited<ReturnType<typeof findPortfolioGallery>> = null;
+  try {
+    gallery = await findPortfolioGallery(slug);
+  } catch {}
   if (!gallery) notFound();
 
   return (

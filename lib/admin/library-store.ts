@@ -112,13 +112,22 @@ async function saveLibraryToJson(store: LibraryStore) {
 
 export async function getLibrary(): Promise<LibraryStore> {
   if (!hasDatabase()) return getLibraryFromJson();
-  await ensureDatabase();
+  try {
+    await ensureDatabase();
+  } catch {
+    return getLibraryFromJson();
+  }
   const db = getPool();
-  const [folders, galleries, media] = await Promise.all([
-    db.query(`SELECT * FROM ${qname('folders')} ORDER BY sort_order, title`),
-    db.query(`SELECT * FROM ${qname('galleries')} ORDER BY sort_order, title`),
-    db.query(`SELECT * FROM ${qname('media')} ORDER BY sort_order, created_at`),
-  ]);
+  let folders, galleries, media;
+  try {
+    [folders, galleries, media] = await Promise.all([
+      db.query(`SELECT * FROM ${qname('folders')} ORDER BY sort_order, title`),
+      db.query(`SELECT * FROM ${qname('galleries')} ORDER BY sort_order, title`),
+      db.query(`SELECT * FROM ${qname('media')} ORDER BY sort_order, created_at`),
+    ]);
+  } catch {
+    return getLibraryFromJson();
+  }
   return {
     folders: folders.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, description: row.description, parentId: row.parent_id, visibility: row.visibility, sortOrder: row.sort_order, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() })),
     galleries: galleries.rows.map((row) => ({ id: row.id, folderId: row.folder_id, title: row.title, slug: row.slug, description: row.description, visibility: row.visibility, sortOrder: row.sort_order, coverMediaId: row.cover_media_id, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() })),
