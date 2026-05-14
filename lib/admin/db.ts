@@ -49,6 +49,21 @@ function sslConfig() {
       return { rejectUnauthorized: false };
     }
   }
+  const sslCa = process.env.SSL_CA;
+  const sslCert = process.env.SSL_CERT;
+  const sslKey = process.env.SSL_KEY;
+  if (sslCa && sslCert && sslKey) {
+    try {
+      return {
+        rejectUnauthorized: false,
+        ca: Buffer.from(sslCa, 'base64').toString('utf8'),
+        cert: Buffer.from(sslCert, 'base64').toString('utf8'),
+        key: Buffer.from(sslKey, 'base64').toString('utf8'),
+      };
+    } catch {
+      return { rejectUnauthorized: false };
+    }
+  }
   if ((process.env.POSTGRES_SSLMODE || process.env.SSL_MODE || '').toLowerCase() || (process.env.DATABASE_URL || '').includes('sslmode=')) return { rejectUnauthorized: false };
   return undefined;
 }

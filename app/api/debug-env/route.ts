@@ -35,6 +35,12 @@ export async function GET() {
       hasDbUrl: !!process.env.DATABASE_URL,
       hasSslMode: !!process.env.SSL_MODE,
       hasPgSslMode: !!process.env.POSTGRES_SSLMODE,
+      hasSslCa: !!process.env.SSL_CA,
+      hasSslCert: !!process.env.SSL_CERT,
+      hasSslKey: !!process.env.SSL_KEY,
+      sslCaLen: (process.env.SSL_CA || '').length,
+      sslCertLen: (process.env.SSL_CERT || '').length,
+      sslKeyLen: (process.env.SSL_KEY || '').length,
     },
   });
 }
