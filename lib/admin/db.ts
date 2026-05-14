@@ -45,7 +45,7 @@ function sslConfig() {
       return { rejectUnauthorized: false };
     }
   }
-  if ((process.env.POSTGRES_SSLMODE || '').toLowerCase() || databaseUrl().includes('sslmode=')) return { rejectUnauthorized: false };
+  if ((process.env.POSTGRES_SSLMODE || process.env.SSL_MODE || '').toLowerCase() || databaseUrl().includes('sslmode=')) return { rejectUnauthorized: false };
   return undefined;
 }
 
