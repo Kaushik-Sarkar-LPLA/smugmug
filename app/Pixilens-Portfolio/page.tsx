@@ -23,7 +23,7 @@ export default async function PortfolioPage() {
       <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-20 sm:grid-cols-2 lg:grid-cols-4 md:px-8">
         {hasGalleries ? (
           galleries.map((gallery) => (
-            <Link key={gallery.id} href={`/Pixilens-Portfolio/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
+            <Link key={gallery.id} href={`/Pixilens-Portfolio/${gallery.slug}`} className="glass-panel group relative overflow-hidden rounded-xl">
               <div className="relative aspect-[3/4] bg-white/60">
                 {gallery.coverUrl ? (
                   <img
@@ -37,6 +37,11 @@ export default async function PortfolioPage() {
                   <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>
                   <h2 className="font-art mt-2 text-xl tracking-[0.08em] text-white">{gallery.title}</h2>
                 </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/35">
+                <span className="rounded-full border border-white/70 px-5 py-2 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
+                  View Gallery
+                </span>
               </div>
             </Link>
           ))

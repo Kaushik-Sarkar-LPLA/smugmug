@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
+import GalleryGrid from '@/components/GalleryGrid';
 import { findPortfolioGallery, getPortfolioGalleries } from '@/lib/portfolio-db';
 
 export const dynamic = 'force-dynamic';
@@ -28,24 +29,22 @@ export default async function PortfolioGalleryPage({ params }: { params: Promise
   } catch {}
   if (!gallery) notFound();
 
+  const gridImages = gallery.images
+    .filter((img) => img.displayUrl || img.publicUrl)
+    .map((img) => ({
+      id: img.id,
+      url: img.displayUrl || img.publicUrl,
+      title: img.title || img.caption || gallery.title,
+      width: img.width,
+      height: img.height,
+    }));
+
   return (
     <SiteShell>
       <PageHero eyebrow="Portfolio" title={gallery.title} />
       <section className="mx-auto max-w-7xl px-5 pb-20 md:px-8">
-        {gallery.images.length ? (
-          <div className="columns-1 gap-4 sm:columns-2 lg:columns-4">
-            {gallery.images.map((image) => (
-              <figure key={image.id} className="mb-4 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
-                {image.displayUrl || image.publicUrl ? (
-                  <img
-                    src={image.displayUrl || image.publicUrl}
-                    alt={image.title || image.caption || gallery.title}
-                    className="h-auto w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100"
-                  />
-                ) : null}
-              </figure>
-            ))}
-          </div>
+        {gridImages.length ? (
+          <GalleryGrid images={gridImages} />
         ) : (
           <div className="glass-panel mx-auto max-w-3xl rounded-xl p-8 text-center text-[#17130f]/65">
             No images are available in this gallery yet.
