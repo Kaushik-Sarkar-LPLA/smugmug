@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
 import { HeroSlideshow } from '@/components/home/HeroSlideshow';
+import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
 import { contact } from '@/lib/site-content';
 
@@ -36,7 +36,7 @@ export default async function Home() {
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
           {gallerySlides.map((slide, index) => (
             <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
-              <Image
+              <ImageWithLoader
                 src={slide.displayUrl}
                 alt={slide.alt || `Pixilens gallery image ${index + 1}`}
                 width={slide.width || 1200}

@@ -109,8 +109,8 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
               {backdropOptions.map((item) => (
                 <label key={item.label} className="group cursor-pointer rounded-xl border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/70 transition hover:-translate-y-1 hover:shadow-lg">
                   <input name="backdrop" value={item.label} type="radio" required={showIpadOptions} className="peer sr-only" />
-                  <span className="block overflow-hidden rounded-lg border border-transparent bg-white/80 peer-checked:border-[#a87921] peer-checked:ring-2 peer-checked:ring-[#a87921]/30">
-                    <img src={item.src} alt={item.label} className="h-48 w-full object-cover" />
+                  <span className="image-loading relative block overflow-hidden rounded-lg border border-transparent bg-white/80 peer-checked:border-[#a87921] peer-checked:ring-2 peer-checked:ring-[#a87921]/30">
+                    <img src={item.src} alt={item.label} onLoad={(e) => { const p = e.currentTarget.parentElement; if (p) p.classList.add('image-loaded'); }} className="h-48 w-full object-cover" />
                   </span>
                   <span className="gold-text mt-3 block text-center peer-checked:font-semibold">{item.label}</span>
                 </label>
@@ -149,7 +149,9 @@ function BoothImages({ images }: { images: Array<{ label: string; src: string }>
       <div className="grid gap-4 md:grid-cols-2">
         {images.map((item) => (
           <div key={item.src} className="rounded-xl border border-[#281f16]/10 bg-white/55 p-3 text-center text-sm text-[#17130f]/70">
-            <img src={item.src} alt={item.label} className="mx-auto max-h-96 w-full rounded-lg object-contain" />
+            <div className="image-loading relative inline-block w-full rounded-lg">
+              <img src={item.src} alt={item.label} onLoad={(e) => (e.currentTarget.parentElement?.parentElement?.classList.add('image-loaded'))} className="mx-auto max-h-96 w-full rounded-lg object-contain" />
+            </div>
             <p className="gold-text mt-3">{item.label}</p>
           </div>
         ))}
