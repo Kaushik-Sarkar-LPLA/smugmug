@@ -1,4 +1,4 @@
-import { getLibrary, hasDatabase, ensureDatabase, type MediaRecord } from '@/lib/admin/library-store';
+import { getLibrary, type MediaRecord } from '@/lib/admin/library-store';
 
 export type PortfolioGallery = {
   id: string;
@@ -16,9 +16,8 @@ const slugFromTitle = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'gallery';
 
 export async function getPortfolioGalleries(): Promise<PortfolioGallery[]> {
-  if (!hasDatabase()) return [];
-  await ensureDatabase();
   const lib = await getLibrary();
+  if (!lib.folders.length) return [];
   const pf = lib.folders.find((f) => f.urlPath === '/Pixilens-Portfolio');
   if (!pf) return [];
   const folderGalleries = lib.galleries
