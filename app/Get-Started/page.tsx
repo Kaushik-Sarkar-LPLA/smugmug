@@ -145,7 +145,7 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
 
           <fieldset className="mt-7">
             <legend className="public-label mb-3">Serviced Type (You can select Multiple products and services) *</legend>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {serviceTypes.map((service) => (
                 <label key={service} className="flex items-start gap-3 rounded-lg border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/72">
                   <input name="serviceTypes" value={service} type="checkbox" className="mt-1 accent-[#a87921]" />
@@ -155,11 +155,11 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
             </div>
           </fieldset>
 
-          <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <label className="public-label">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Select an option</option>{eventTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
+          <div className="mt-7 grid gap-5 sm:grid-cols-2">
+            <label className="public-label sm:col-span-2">Event Type *<select name="eventType" required className="public-input public-select"><option value="">Select an option</option>{eventTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
             <label className="public-label">Event date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
             <label className="public-label">How did you hear about us?<select name="referral" className="public-input public-select"><option value="">Select an option</option>{referralOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-            <label className="public-label">Event Address *<input name="eventAddress" required className="public-input" placeholder="E.g. 742 Evergreen Terrace, Springfield" /></label>
+            <label className="public-label sm:col-span-2">Event Address *<input name="eventAddress" required className="public-input" placeholder="E.g. 742 Evergreen Terrace, Springfield" /></label>
           </div>
 
           <label className="public-label mt-7 block">Tell us more about this Event<textarea name="message" className="public-input min-h-36" placeholder="What do I need to know about the project?" /></label>

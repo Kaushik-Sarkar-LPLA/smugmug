@@ -25,7 +25,7 @@ export default function AboutPage() {
           <div className="space-y-6 text-base leading-8 text-[#17130f]/72 md:text-lg">
             {paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
-          <a href={contact.messengerHref} className="glass-button mt-8 w-fit">Click here to DM us directly</a>
+          <a href="/Get-Started" className="glass-button mt-8 w-fit">Get started</a>
         </div>
       </section>
     </SiteShell>

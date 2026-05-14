@@ -18,7 +18,7 @@ export default function ServicesPage() {
           <article key={service.title} className="glass-panel flex min-h-80 flex-col rounded-xl p-6 md:p-8">
             <h2 className="gold-text text-2xl font-light tracking-[0.08em]">{service.title}</h2>
             <p className="mt-5 flex-1 text-sm leading-7 text-[#17130f]/70">{service.description}</p>
-            <a href={contact.messengerHref} className="glass-button mt-7 w-fit">Book us now</a>
+            <a href="/Get-Started" className="glass-button mt-7 w-fit">Contact us</a>
           </article>
         ))}
       </section>

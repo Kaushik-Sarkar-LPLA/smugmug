@@ -53,7 +53,7 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
 
   return (
     <form action={action} onSubmit={handleSubmit} className="glass-panel rounded-xl p-6 md:p-9">
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <label className="public-label">Select Area *<select name="area" required className="public-input public-select"><option value="">Please Select</option>{areas.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="public-label">Photobooth Type *<select name="photoboothType" required value={photoboothType} onChange={(event) => setPhotoboothType(event.target.value)} className="public-input public-select"><option value="">Please Select</option>{boothTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
@@ -61,7 +61,7 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
       {show360BoothImages ? <BoothImages images={boothImages.threeSixty} /> : null}
       {showStandardBoothImages ? <BoothImages images={boothImages.standard} /> : null}
 
-      <div className="mt-7 grid gap-5 md:grid-cols-2">
+      <div className="mt-7 grid gap-5 sm:grid-cols-2">
         <label className="public-label">First Name *<input name="firstName" required className="public-input" /></label>
         <label className="public-label">Last Name *<input name="lastName" required className="public-input" /></label>
         <label className="public-label">Phone Number *<input name="phone" required className="public-input" placeholder="(000) 000-0000" /></label>
@@ -70,7 +70,7 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
 
       <fieldset className="mt-7">
         <legend className="public-label mb-3">Event Type *</legend>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {eventTypes.map((item) => (
             <label key={item} className="flex items-start gap-3 rounded-lg border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/72">
               <input name="eventType" value={item} type="radio" required className="mt-1 accent-[#a87921]" onChange={(event) => setEventType(event.target.value)} />
@@ -82,19 +82,19 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
 
       {eventType === 'Other' ? <label className="public-label mt-5 block">Other Event Type *<input name="otherEventType" required className="public-input" /></label> : null}
 
-      <div className="mt-7 grid gap-5 md:grid-cols-2">
-        <label className="public-label">Event Date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
-        <label className="public-label">Event Time *<input name="eventTime" type="time" required className="public-input public-date" /></label>
+      <div className="mt-7 grid gap-5 sm:grid-cols-2">
+        <label className="public-label sm:col-span-2">Event Date *<input name="eventDate" type="date" required className="public-input public-date" /></label>
+        <label className="public-label sm:col-span-2">Event Time *<input name="eventTime" type="time" required className="public-input public-date" /></label>
         <label className="public-label">Number of Hours *<select name="numberOfHours" required className="public-input public-select"><option value="">Please Select</option>{hourOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="public-label">Venue Name *<input name="venueName" required className="public-input" placeholder="If home just write home" /></label>
-        <label className="public-label">Where will we be setting up? *<select name="setupLocation" required className="public-input public-select"><option value="">Please Select</option>{setupOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="public-label sm:col-span-2">Where will we be setting up? *<select name="setupLocation" required className="public-input public-select"><option value="">Please Select</option>{setupOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
 
       <fieldset className="mt-7">
         <legend className="public-label mb-3">Venue Address *</legend>
-        <div className="grid gap-5 md:grid-cols-2">
-          <label className="public-label md:col-span-2">Street Address *<input name="venueStreet" required className="public-input" /></label>
-          <label className="public-label md:col-span-2">Street Address Line 2<input name="venueStreet2" className="public-input" /></label>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="public-label sm:col-span-2">Street Address *<input name="venueStreet" required className="public-input" /></label>
+          <label className="public-label sm:col-span-2">Street Address Line 2<input name="venueStreet2" className="public-input" /></label>
           <label className="public-label">City *<input name="venueCity" required className="public-input" /></label>
           <label className="public-label">State / Province *<input name="venueState" required className="public-input" /></label>
           <label className="public-label">Postal / Zip Code *<input name="venueZip" required className="public-input" /></label>

@@ -8,14 +8,16 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
   const [loaded, setLoaded] = useState<Set<string>>(new Set());
   const [activeIndex, setActiveIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
-  const loadedSlides = useMemo(() => slides.filter((slide) => loaded.has(slide.id)), [slides, loaded]);
-  const activeSlide = loadedSlides[activeIndex % Math.max(loadedSlides.length, 1)];
-  const loadingPercent = slides.length ? Math.round((loaded.size / slides.length) * 100) : 100;
+  const maxSlides = typeof window !== 'undefined' && window.innerWidth < 768 ? 3 : slides.length;
+  const preloadSlides = slides.slice(0, maxSlides);
+  const loadedSlides = useMemo(() => preloadSlides.filter((slide) => loaded.has(slide.id)), [preloadSlides, loaded]);
+  const activeSlide = loadedSlides.length > 0 ? loadedSlides[activeIndex % loadedSlides.length] : null;
+  const loadingPercent = preloadSlides.length ? Math.round((loaded.size / preloadSlides.length) * 100) : 100;
 
   useEffect(() => {
     let cancelled = false;
     setLoaded(new Set());
-    for (const slide of slides) {
+    for (const slide of preloadSlides) {
       const image = new window.Image();
       image.onload = () => {
         if (cancelled) return;
@@ -26,7 +28,7 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
     return () => {
       cancelled = true;
     };
-  }, [slides]);
+  }, [preloadSlides]);
 
   useEffect(() => {
     if (loadedSlides.length <= 1) return;

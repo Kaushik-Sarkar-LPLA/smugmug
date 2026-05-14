@@ -79,8 +79,8 @@ export default function PhotoboothPage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 hidden md:block">
-            <table className="w-full border-collapse text-left text-sm">
+          <div className="mt-6 hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[540px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-[#17130f]/10 text-xs uppercase tracking-[0.22em] text-[#17130f]/45">
                   <th className="py-3 pr-4 font-normal">Service</th>

@@ -7,10 +7,10 @@ export const metadata = {
 };
 
 const contactActions = [
-  { label: 'Click here to contact us and get started', href: contact.honeybookHref },
-  { label: 'WhatsApp +17372310033', href: contact.whatsappHref },
-  { label: 'Phone Number +1737 231 0033', href: contact.phoneHref },
-  { label: 'Email at contact@pixilens.com', href: contact.emailHref },
+  { label: 'Contact us', href: contact.honeybookHref },
+  { label: 'WhatsApp', href: contact.whatsappHref, detail: '+1 737 231 0033' },
+  { label: 'Phone', href: contact.phoneHref, detail: '+1 737 231 0033' },
+  { label: 'Email', href: contact.emailHref, detail: 'contact@pixilens.com' },
 ];
 
 export default function ContactPage() {
@@ -23,8 +23,9 @@ export default function ContactPage() {
         <ContactIcon />
         <div className="grid gap-4">
           {contactActions.map((action) => (
-            <a key={action.label} href={action.href} className="glass-button justify-start rounded-lg px-6 py-5 text-left text-sm">
-              {action.label}
+            <a key={action.label} href={action.href} className="glass-button justify-start rounded-lg px-6 py-4 text-left text-sm md:py-5">
+              <span className="font-medium">{action.label}</span>
+              {'detail' in action && action.detail ? <span className="ml-2 text-[#17130f]/55">{action.detail}</span> : null}
             </a>
           ))}
         </div>

@@ -128,14 +128,14 @@ export default async function BookingFormPage({ searchParams }: { searchParams: 
         {params.status === 'email-not-configured' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Email sending is not configured yet. Please email {contact.email} directly.</div> : null}
 
         <form action={sendBookingForm} className="glass-panel rounded-xl p-6 md:p-9">
-          <div className="grid gap-5 md:grid-cols-2">
-            <label className="public-label md:col-span-2">Name *<input name="name" required className="public-input" /></label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="public-label sm:col-span-2">Name *<input name="name" required className="public-input" /></label>
             <label className="public-label">Email *<input name="email" type="email" required className="public-input" /></label>
             <label className="public-label">Phone Number *<input name="phone" required className="public-input" /></label>
-            <label className="public-label">Date *<input name="date" type="date" required className="public-input public-date" /></label>
+            <label className="public-label sm:col-span-2">Date *<input name="date" type="date" required className="public-input public-date" /></label>
             <label className="public-label">Service *<select name="service" required className="public-input public-select"><option value="">Please Select</option>{services.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label">Type *<select name="type" required className="public-input public-select"><option value="">Please Select</option>{eventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="public-label md:col-span-2">If other selected above<input name="otherType" className="public-input" /></label>
+            <label className="public-label sm:col-span-2">If other selected above<input name="otherType" className="public-input" /></label>
           </div>
 
           <label className="public-label mt-7 block">Your Address *<textarea name="address" required className="public-input min-h-28" /></label>
@@ -143,7 +143,7 @@ export default async function BookingFormPage({ searchParams }: { searchParams: 
 
           <fieldset className="mt-7">
             <legend className="public-label mb-3">Delivery *</legend>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {deliveryOptions.map((item) => (
                 <label key={item} className="flex items-start gap-3 rounded-lg border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/72">
                   <input name="delivery" value={item} type="checkbox" className="mt-1 accent-[#a87921]" />
@@ -156,7 +156,7 @@ export default async function BookingFormPage({ searchParams }: { searchParams: 
           <label className="public-label mt-7 block">If Other Mentioned above in Delivery<input name="otherDelivery" className="public-input" /></label>
           <label className="public-label mt-7 block">Events Details and Important Notes *<textarea name="details" required className="public-input min-h-36" /></label>
 
-          <div className="mt-7 grid gap-5 md:grid-cols-2">
+          <div className="mt-7 grid gap-5 sm:grid-cols-2">
             <label className="public-label">Include Digital Photobooth? Extra charges *<select name="includePhotobooth" required className="public-input public-select"><option value="">Please Select</option>{photoboothOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label">Youtube Live streaming (1 Camera) Extra charges *<select name="youtubeLive" required className="public-input public-select"><option value="">Please Select</option>{yesNoOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label">Total Hours *<input name="totalHours" type="number" min="1" required className="public-input" /></label>
