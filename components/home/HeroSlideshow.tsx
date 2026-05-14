@@ -8,13 +8,26 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
   const [loaded, setLoaded] = useState<Set<string>>(new Set());
   const [activeIndex, setActiveIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
-  const maxSlides = typeof window !== 'undefined' && window.innerWidth < 768 ? 3 : slides.length;
-  const preloadSlides = slides.slice(0, maxSlides);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const preloadSlides = useMemo(() => {
+    const max = isMobile ? 3 : slides.length;
+    return slides.slice(0, max);
+  }, [slides, isMobile]);
+
   const loadedSlides = useMemo(() => preloadSlides.filter((slide) => loaded.has(slide.id)), [preloadSlides, loaded]);
   const activeSlide = loadedSlides.length > 0 ? loadedSlides[activeIndex % loadedSlides.length] : null;
   const loadingPercent = preloadSlides.length ? Math.round((loaded.size / preloadSlides.length) * 100) : 100;
 
   useEffect(() => {
+    if (preloadSlides.length === 0) return;
     let cancelled = false;
     setLoaded(new Set());
     for (const slide of preloadSlides) {
@@ -41,7 +54,7 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ '--slide-duration': `${duration}s` } as React.CSSProperties}>
-      {slides.map((slide, index) => (
+      {preloadSlides.map((slide, index) => (
         <Image
           key={slide.id}
           src={slide.imageUrl}
