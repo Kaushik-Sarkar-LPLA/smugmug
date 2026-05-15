@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
+import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getLibrary } from '@/lib/admin/library-store';
 
 export const revalidate = 0;
@@ -31,7 +31,7 @@ export default async function FolderPage({ params }: { params: Promise<{ slug: s
           return (
             <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
               <div className="relative aspect-[4/3] bg-white/5">
-                {cover?.displayUrl ? <Image src={cover.displayUrl} alt={gallery.title} fill className="object-cover opacity-85 transition duration-700 group-hover:scale-105 group-hover:opacity-100" sizes="(min-width:1024px) 33vw, 50vw" /> : null}
+                {cover?.displayUrl ? <ImageWithLoader src={cover.displayUrl} alt={gallery.title} fill className="object-cover opacity-85 transition duration-700 group-hover:scale-105 group-hover:opacity-100" sizes="(min-width:1024px) 33vw, 50vw" /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
                 <div className="absolute bottom-0 p-6">
                   <p className="text-xs uppercase tracking-[0.32em] text-white/50">Gallery</p>

@@ -13,7 +13,7 @@ export default function ServicesPage() {
         <p>Photography, videography, live streaming, and photobooth services for portraits, events, weddings, dance, fashion, products, maternity, newborns, kids, and custom fine art.</p>
       </PageHero>
       <ServiceIcon />
-      <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-20 md:grid-cols-2 md:px-8 lg:grid-cols-3">
+      <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-20 sm:grid-cols-2 md:px-8 lg:grid-cols-3">
         {services.map((service) => (
           <article key={service.title} className="glass-panel flex min-h-80 flex-col rounded-xl p-6 md:p-8">
             <h2 className="gold-text text-2xl font-light tracking-[0.08em]">{service.title}</h2>

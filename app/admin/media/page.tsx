@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import { AdminShell } from '@/components/AdminShell';
+import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getLibrary } from '@/lib/admin/library-store';
 
 export const metadata = { title: 'Media Admin - Pixilens', robots: { index: false, follow: false } };
@@ -35,7 +35,7 @@ export default async function MediaPage({ searchParams }: { searchParams: Promis
             return (
               <article key={item.id} className="glass-panel grid gap-5 rounded-3xl p-4 md:grid-cols-[180px_1fr]">
                 <div className="overflow-hidden rounded-2xl bg-black/40">
-                  {item.type === 'photo' ? <Image src={item.displayUrl} alt={item.title} width={180} height={130} className="h-36 w-full object-cover" /> : <video src={item.publicUrl} className="h-36 w-full object-cover" controls />}
+                  {item.type === 'photo' ? <ImageWithLoader src={item.displayUrl} alt={item.title} width={180} height={130} className="h-36 w-full object-cover" /> : <video src={item.publicUrl} className="h-36 w-full object-cover" controls />}
                 </div>
                 <div>
                   <p className="font-art text-xl text-white">{item.title}</p>

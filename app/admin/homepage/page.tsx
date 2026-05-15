@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import { AdminShell } from '@/components/AdminShell';
+import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
 
 export const metadata = {
@@ -25,7 +25,7 @@ export default async function AdminHomepagePage({ searchParams }: { searchParams
         <section className="grid gap-4">
           {config.items.map((item) => (
             <article key={item.id} className="glass-panel grid gap-5 rounded-3xl p-4 md:grid-cols-[220px_1fr] md:p-5">
-              <Image src={item.displayUrl} alt={item.alt} width={220} height={150} className="h-40 w-full rounded-2xl object-cover" />
+              <ImageWithLoader src={item.displayUrl} alt={item.alt} width={220} height={150} className="h-40 w-full rounded-2xl object-cover" />
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="md:col-span-4">
                   <p className="font-art text-xl text-white">{item.fileName}</p>

@@ -137,8 +137,8 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
             <p><a href={contact.emailHref} className="gold-text">{contact.email}</a></p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <label className="public-label md:col-span-2">Please enter your first and last name *<input name="name" required className="public-input" placeholder="Your name here" /></label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="public-label sm:col-span-2">Please enter your first and last name *<input name="name" required className="public-input" placeholder="Your name here" /></label>
             <label className="public-label">Email *<input name="email" type="email" required className="public-input" placeholder="E.g. myemail@email.com" /></label>
             <label className="public-label">Phone number *<input name="phone" required className="public-input" placeholder="E.g. 541 444 0755" /></label>
           </div>

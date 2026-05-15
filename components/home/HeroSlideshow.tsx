@@ -18,7 +18,7 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
   }, []);
 
   const preloadSlides = useMemo(() => {
-    const max = isMobile ? 3 : slides.length;
+    const max = isMobile ? 3 : 10;
     return slides.slice(0, max);
   }, [slides, isMobile]);
 

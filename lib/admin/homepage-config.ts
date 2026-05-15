@@ -78,10 +78,14 @@ async function saveHomepageConfigToJson(config: HomepageConfig) {
 
 export async function getHomepageConfig(): Promise<HomepageConfig> {
   if (!hasDatabase()) return getHomepageConfigFromJson();
-  await ensureDatabase();
-  const result = await getPool().query(`SELECT value FROM ${qname('kv_store')} WHERE key = $1`, ['homepage_config']);
-  if (!result.rowCount) return defaultConfig();
-  return mergeDefaults(result.rows[0].value as HomepageConfig);
+  try {
+    await ensureDatabase();
+    const result = await getPool().query(`SELECT value FROM ${qname('kv_store')} WHERE key = $1`, ['homepage_config']);
+    if (!result.rowCount) return defaultConfig();
+    return mergeDefaults(result.rows[0].value as HomepageConfig);
+  } catch {
+    return getHomepageConfigFromJson();
+  }
 }
 
 export async function saveHomepageConfig(config: HomepageConfig) {

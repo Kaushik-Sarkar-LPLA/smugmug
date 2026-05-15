@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
+import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getLibrary } from '@/lib/admin/library-store';
 
 export const revalidate = 0;
@@ -29,7 +29,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
           {media.map((item) => (
             <figure key={item.id} className="mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white/5">
               {item.type === 'photo' ? (
-                <Image src={item.displayUrl} alt={item.title} width={item.width || 1200} height={item.height || 800} className="h-auto w-full object-cover" />
+                <ImageWithLoader src={item.displayUrl} alt={item.title} width={item.width || 1200} height={item.height || 800} className="h-auto w-full object-cover" />
               ) : (
                 <video src={item.publicUrl} className="h-auto w-full" controls />
               )}

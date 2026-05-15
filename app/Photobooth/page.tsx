@@ -104,7 +104,7 @@ export default function PhotoboothPage() {
           </ul>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {experiences.map((item) => (
             <article key={item.title} className="photobooth-card glass-panel group overflow-hidden rounded-xl p-6 md:p-8">
               <p className="text-xs uppercase tracking-[0.32em] text-[#17130f]/45">{item.price}</p>
