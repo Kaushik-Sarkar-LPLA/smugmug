@@ -28,19 +28,8 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
 
   useEffect(() => {
     if (preloadSlides.length === 0) return;
-    let cancelled = false;
+    // Reset loaded state when slides change so new slides animate in
     setLoaded(new Set());
-    for (const slide of preloadSlides) {
-      const image = new window.Image();
-      image.onload = () => {
-        if (cancelled) return;
-        setLoaded((current) => new Set(current).add(slide.id));
-      };
-      image.src = slide.imageUrl;
-    }
-    return () => {
-      cancelled = true;
-    };
   }, [preloadSlides]);
 
   useEffect(() => {
@@ -60,11 +49,10 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
           src={slide.imageUrl}
           alt=""
           fill
-          unoptimized
           priority={index < 2}
           sizes="100vw"
           className="pointer-events-none absolute opacity-0"
-          onLoad={() => setLoaded((current) => new Set(current).add(slide.id))}
+          onLoadingComplete={() => setLoaded((current) => new Set(current).add(slide.id))}
         />
       ))}
       {activeSlide ? (
@@ -73,7 +61,6 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
           src={activeSlide.imageUrl}
           alt=""
           fill
-          unoptimized
           className="hero-active-slide object-cover"
           style={{ objectPosition: activeSlide.objectPosition }}
           sizes="100vw"
