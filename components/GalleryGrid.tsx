@@ -48,9 +48,9 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
               onLoad={() => setLoadedMap((prev) => new Set(prev).add(image.id))}
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/40">
-              <span className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
+              <button className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100 active:scale-90 active:bg-white/20 cursor-pointer">
                 View image
-              </span>
+              </button>
             </div>
           </button>
         ))}

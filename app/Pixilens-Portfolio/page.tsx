@@ -54,9 +54,9 @@ function PortfolioCard({ gallery }: { gallery: Awaited<ReturnType<typeof getPort
         </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/35">
-        <span className="rounded-full border border-white/70 px-5 py-2 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
+        <button className="rounded-full border border-white/70 px-5 py-2 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100 active:scale-90 active:bg-white/20 cursor-pointer">
           View Gallery
-        </span>
+        </button>
       </div>
     </Link>
   );
