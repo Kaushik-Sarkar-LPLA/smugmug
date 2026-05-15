@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type LightboxImage = {
   url: string;
@@ -23,6 +23,7 @@ export default function GalleryLightbox({
   onNext: () => void;
 }) {
   const image = images[currentIndex];
+  const [loaded, setLoaded] = useState(false);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -36,11 +37,12 @@ export default function GalleryLightbox({
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
+    setLoaded(false);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [handleKeyDown]);
+  }, [handleKeyDown, currentIndex]);
 
   return (
     <div
@@ -81,11 +83,12 @@ export default function GalleryLightbox({
       )}
 
       <div className="flex h-full w-full items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-        <div className="relative flex max-h-full max-w-full flex-col items-center">
+        <div className={`relative flex max-h-full max-w-full flex-col items-center ${loaded ? '' : 'image-loading'}`}>
           <img
             src={image.url}
             alt={image.title}
             className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl"
+            onLoad={() => setLoaded(true)}
           />
           <p className="mt-3 text-sm text-white/50">{image.title}</p>
         </div>

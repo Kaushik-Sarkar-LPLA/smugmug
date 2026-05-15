@@ -14,6 +14,7 @@ export type GalleryImage = {
 export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedMap, setLoadedMap] = useState<Set<string>>(new Set());
 
   const openLightbox = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -37,13 +38,14 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
           <button
             key={image.id}
             onClick={() => openLightbox(index)}
-            className="group relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-white/60 shadow-[0_8px_30px_rgba(71,52,24,0.10)] transition-shadow hover:shadow-[0_12px_40px_rgba(71,52,24,0.18)]"
+            className={`group relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-white/60 shadow-[0_8px_30px_rgba(71,52,24,0.10)] transition-shadow ${loadedMap.has(image.id) ? '' : 'image-loading'} hover:shadow-[0_12px_40px_rgba(71,52,24,0.18)]`}
           >
             <img
               src={image.url}
               alt={image.title}
               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
               loading="lazy"
+              onLoad={() => setLoadedMap((prev) => new Set(prev).add(image.id))}
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/40">
               <span className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
