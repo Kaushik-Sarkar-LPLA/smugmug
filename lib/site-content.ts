@@ -31,7 +31,7 @@ export const contact = {
   messengerHref: 'http://m.me/pixilens',
   honeybookHref: '/Booking-Form',
   vcardHref: 'https://highvoltage.fashion/PixilensPhotographyAustin.vcf',
-  releaseHref: '/Booking-Form',
+  releaseHref: '/Release-Agreement',
   bookHref: '/Booking-Form',
   rentalHref: '/Photobooth-Enquiry',
 };
