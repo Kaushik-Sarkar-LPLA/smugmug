@@ -136,7 +136,7 @@ export function PhotoboothRentalForm({ action, agreementText }: Props) {
         <label className="flex items-center gap-3 rounded-lg border border-[#281f16]/10 bg-white/55 p-3 text-sm text-[#17130f]/72"><input name="agreement" value="Yes I Agree" type="radio" required className="accent-[#a87921]" /> Yes I Agree</label>
       </fieldset>
 
-      <button className="glass-button mt-7" type="submit">Submit</button>
+      <button className="glass-button mt-7 cursor-pointer" type="submit">Submit</button>
       <p className="mt-6 text-center text-sm text-[#17130f]/55">Thanks for choosing us.</p>
     </form>
   );

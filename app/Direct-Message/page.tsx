@@ -23,7 +23,7 @@ export default function ContactPage() {
         <ContactIcon />
         <div className="grid gap-4">
           {contactActions.map((action) => (
-            <a key={action.label} href={action.href} className="glass-button justify-start rounded-lg px-6 py-4 text-left text-sm md:py-5">
+            <a key={action.label} href={action.href} className="glass-button justify-start rounded-lg px-6 py-4 text-left text-sm md:py-5 cursor-pointer">
               <span className="font-medium">{action.label}</span>
               {'detail' in action && action.detail ? <span className="ml-2 text-[#17130f]/55">{action.detail}</span> : null}
             </a>

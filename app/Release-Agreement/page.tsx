@@ -234,7 +234,7 @@ export default async function ReleaseAgreementPage({ searchParams }: { searchPar
 
             <label className="public-label sm:col-span-2">Signature *<input name="signature" required className="public-input" placeholder="Type your full legal name as signature" /></label>
 
-            <button className="glass-button sm:col-span-2" type="submit">Submit Release Agreement</button>
+            <button className="glass-button sm:col-span-2 cursor-pointer" type="submit">Submit Release Agreement</button>
           </form>
         </div>
       </section>

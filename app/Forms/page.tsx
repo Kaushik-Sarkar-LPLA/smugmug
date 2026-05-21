@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { FormIcon } from '@/components/FormIcon';
 
@@ -22,10 +23,10 @@ export default function FormsPage() {
       <FormIcon />
       <section className="mx-auto grid max-w-5xl gap-6 px-5 pb-20 md:px-8">
         {forms.map((form) => (
-          <a key={form.label} href={form.href} className="glass-panel group block rounded-xl p-6 transition hover:-translate-y-1 hover:shadow-lg">
+          <Link key={form.label} href={form.href} className="glass-panel group block rounded-xl p-6 transition hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] cursor-pointer">
             <p className="gold-text text-lg font-light tracking-[0.06em]">{form.label}</p>
             <p className="mt-2 text-sm leading-6 text-[#17130f]/65">{form.description}</p>
-          </a>
+          </Link>
         ))}
       </section>
     </SiteShell>

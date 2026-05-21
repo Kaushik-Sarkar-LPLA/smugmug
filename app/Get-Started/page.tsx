@@ -165,7 +165,7 @@ export default async function GetStartedPage({ searchParams }: { searchParams: P
           <label className="public-label mt-7 block">Tell us more about this Event<textarea name="message" className="public-input min-h-36" placeholder="What do I need to know about the project?" /></label>
 
           <p className="mt-6 text-xs leading-6 text-[#17130f]/50">Clicking Send confirms you're okay with getting texts from Pixilens. Message and/or data rates may apply.</p>
-          <button className="glass-button mt-7" type="submit">Send</button>
+          <button className="glass-button mt-7 cursor-pointer" type="submit">Send</button>
         </form>
       </section>
     </SiteShell>

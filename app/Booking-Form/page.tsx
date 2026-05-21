@@ -172,7 +172,7 @@ export default async function BookingFormPage({ searchParams }: { searchParams: 
           </div>
 
           <label className="public-label mt-7 block">Signature *<input name="signature" required className="public-input" placeholder="Type your full name as signature" /></label>
-          <button className="glass-button mt-7" type="submit">Submit</button>
+          <button className="glass-button mt-7 cursor-pointer" type="submit">Submit</button>
         </form>
       </section>
     </SiteShell>
