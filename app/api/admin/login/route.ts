@@ -7,14 +7,16 @@ export async function POST(request: NextRequest) {
   const password = String(form.get('password') || '');
   const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
 
+  const forwardedProto = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
+  const baseUrl = `${forwardedProto}://${forwardedHost}`;
+
   if (username !== expectedUsername || !verifyPassword(password)) {
-    return NextResponse.redirect(new URL('/admin/login?error=1', request.url), 303);
+    return NextResponse.redirect(new URL('/admin/login?error=1', baseUrl), 303);
   }
 
   const next = String(form.get('next') || '/admin');
-  const forwardedProto = 'https';
-  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
-  const redirectUrl = new URL(`${forwardedProto}://${forwardedHost}`);
+  const redirectUrl = new URL(baseUrl);
   redirectUrl.pathname = next.startsWith('/admin') ? next : '/admin';
   const response = NextResponse.redirect(redirectUrl, 303);
   setSessionCookie(response, username);

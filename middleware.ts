@@ -28,10 +28,11 @@ export async function middleware(request: NextRequest) {
   const session = await verifySession(request.cookies.get('pixilens_admin_session')?.value);
   if (session) return NextResponse.next();
 
-  const url = request.nextUrl.clone();
-  url.pathname = '/admin/login';
-  url.searchParams.set('next', path);
-  return NextResponse.redirect(url);
+  const forwardedProto = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
+  const redirectUrl = new URL(`${forwardedProto}://${forwardedHost}/admin/login`);
+  redirectUrl.searchParams.set('next', path);
+  return NextResponse.redirect(redirectUrl);
 }
 
 export const config = {
