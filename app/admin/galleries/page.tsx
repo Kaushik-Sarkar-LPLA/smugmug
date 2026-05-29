@@ -1,6 +1,7 @@
 import { AdminShell } from '@/components/AdminShell';
 import { getLibrary } from '@/lib/admin/library-store';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Galleries Admin - Pixilens', robots: { index: false, follow: false } };
 
 export default async function GalleriesPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
@@ -14,7 +15,7 @@ export default async function GalleriesPage({ searchParams }: { searchParams: Pr
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form action="/api/admin/galleries" method="post" className="glass-panel rounded-3xl p-6">
           <h2 className="font-art gold-text text-2xl">Create gallery</h2>
-          <GalleryFields folders={store.folders} media={store.media} />
+          <GalleryFields folders={store.folders} media={[]} />
           <button className="glass-button mt-6" type="submit">Create gallery</button>
         </form>
         <div className="space-y-4">
@@ -37,14 +38,26 @@ export default async function GalleriesPage({ searchParams }: { searchParams: Pr
   );
 }
 
-function GalleryFields({ folders, media, gallery }: { folders: Awaited<ReturnType<typeof getLibrary>>['folders']; media: Awaited<ReturnType<typeof getLibrary>>['media']; gallery?: Awaited<ReturnType<typeof getLibrary>>['galleries'][number] }) {
+function GalleryFields({ folders, media, gallery }: { folders: Awaited<ReturnType<typeof getLibrary>>['folders']; media: { id: string; title: string; fileName: string }[]; gallery?: Awaited<ReturnType<typeof getLibrary>>['galleries'][number] }) {
   return (
     <div className="mt-5 grid gap-4">
       <label className="admin-label">Title<input className="admin-input" name="title" defaultValue={gallery?.title} required /></label>
       <label className="admin-label">Slug<input className="admin-input" name="slug" defaultValue={gallery?.slug} /></label>
       <label className="admin-label">Description<textarea className="admin-input min-h-24" name="description" defaultValue={gallery?.description} /></label>
       <label className="admin-label">Folder<select className="admin-input" name="folderId" defaultValue={gallery?.folderId || ''}><option value="">None</option>{folders.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
-      <label className="admin-label">Cover media<select className="admin-input" name="coverMediaId" defaultValue={gallery?.coverMediaId || ''}><option value="">Auto</option>{media.map((item) => <option key={item.id} value={item.id}>{item.title || item.fileName}</option>)}</select></label>
+      <div className="flex flex-col gap-1.5">
+        <label className="admin-label">Cover media ID</label>
+        <input className="admin-input" name="coverMediaId" defaultValue={gallery?.coverMediaId || ''} placeholder="Auto (Paste a media ID)" />
+        {media.length > 0 ? (
+          <p className="text-[11px] text-white/50 max-h-24 overflow-y-auto">
+            Available in gallery: {media.map((item) => `${item.title || item.fileName} (${item.id})`).join(', ')}
+          </p>
+        ) : (
+          <p className="text-[11px] text-white/50">
+            Leave blank for auto-selection. Copy a media ID from the Media list to set a custom cover.
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <label className="admin-label">Visibility<select className="admin-input" name="visibility" defaultValue={gallery?.visibility || 'public'}><option>public</option><option>private</option><option>draft</option></select></label>
         <label className="admin-label">Sort order<input className="admin-input" name="sortOrder" type="number" defaultValue={gallery?.sortOrder || 0} /></label>

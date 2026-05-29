@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
     revalidatePath('/admin');
     revalidatePath('/admin/media');
     const redirectUrl = adminRedirectUrl(request, '/admin/media');
+    const page = form.get('page');
+    const galleryId = form.get('galleryId');
+    if (page) redirectUrl.searchParams.set('page', String(page));
+    if (galleryId) redirectUrl.searchParams.set('galleryId', String(galleryId));
     redirectUrl.searchParams.set('saved', '1');
     return NextResponse.redirect(redirectUrl, 303);
   }
@@ -113,6 +117,7 @@ export async function POST(request: NextRequest) {
   revalidatePath('/admin');
   revalidatePath('/admin/media');
   const redirectUrl = adminRedirectUrl(request, '/admin/media');
+  if (galleryId) redirectUrl.searchParams.set('galleryId', galleryId);
   redirectUrl.searchParams.set('saved', '1');
   return NextResponse.redirect(redirectUrl, 303);
 }

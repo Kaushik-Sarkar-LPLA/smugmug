@@ -110,6 +110,37 @@ async function saveLibraryToJson(store: LibraryStore) {
   await fs.writeFile(libraryPath(), JSON.stringify(store, null, 2));
 }
 
+function rowToMediaRecord(row: any): MediaRecord {
+  return {
+    id: row.id,
+    galleryId: row.gallery_id,
+    type: row.type,
+    title: row.title,
+    caption: row.caption,
+    slug: row.slug,
+    visibility: row.visibility,
+    sortOrder: row.sort_order,
+    provider: row.provider,
+    publicUrl: row.public_url,
+    displayUrl: row.display_url,
+    deleteUrl: row.delete_url || undefined,
+    localPath: row.local_path || undefined,
+    fileName: row.file_name,
+    mimeType: row.mime_type,
+    sizeBytes: Number(row.size_bytes),
+    width: row.width || undefined,
+    height: row.height || undefined,
+    imageKey: row.image_key || undefined,
+    smugmugUri: row.smugmug_uri || undefined,
+    originalUrl: row.original_url || undefined,
+    urlPath: row.url_path || undefined,
+    migrationStatus: row.migration_status || undefined,
+    migrationError: row.migration_error || undefined,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+  };
+}
+
 export async function getLibrary(): Promise<LibraryStore> {
   if (!hasDatabase()) return getLibraryFromJson();
   try {
@@ -129,9 +160,9 @@ export async function getLibrary(): Promise<LibraryStore> {
     return getLibraryFromJson();
   }
   return {
-    folders: folders.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, description: row.description, parentId: row.parent_id, visibility: row.visibility, sortOrder: row.sort_order, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() })),
-    galleries: galleries.rows.map((row) => ({ id: row.id, folderId: row.folder_id, title: row.title, slug: row.slug, description: row.description, visibility: row.visibility, sortOrder: row.sort_order, coverMediaId: row.cover_media_id, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() })),
-    media: media.rows.map((row) => ({ id: row.id, galleryId: row.gallery_id, type: row.type, title: row.title, caption: row.caption, slug: row.slug, visibility: row.visibility, sortOrder: row.sort_order, provider: row.provider, publicUrl: row.public_url, displayUrl: row.display_url, deleteUrl: row.delete_url || undefined, localPath: row.local_path || undefined, fileName: row.file_name, mimeType: row.mime_type, sizeBytes: Number(row.size_bytes), width: row.width || undefined, height: row.height || undefined, imageKey: row.image_key || undefined, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, migrationStatus: row.migration_status || undefined, migrationError: row.migration_error || undefined, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() })),
+    folders: folders.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, description: row.description, parentId: row.parent_id, visibility: row.visibility, sortOrder: row.sort_order, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''), updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || '') })),
+    galleries: galleries.rows.map((row) => ({ id: row.id, folderId: row.folder_id, title: row.title, slug: row.slug, description: row.description, visibility: row.visibility, sortOrder: row.sort_order, coverMediaId: row.cover_media_id, smugmugUri: row.smugmug_uri || undefined, originalUrl: row.original_url || undefined, urlPath: row.url_path || undefined, createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''), updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || '') })),
+    media: media.rows.map(rowToMediaRecord),
   };
 }
 
@@ -166,6 +197,82 @@ export async function migrateJsonLibraryToDatabase() {
   if (current.folders.length || current.galleries.length || current.media.length) return;
   const jsonStore = await getLibraryFromJson();
   if (jsonStore.folders.length || jsonStore.galleries.length || jsonStore.media.length) await saveLibrary(jsonStore);
+}
+
+export async function getGalleriesShallow(): Promise<{ id: string; title: string }[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.galleries.map((g) => ({ id: g.id, title: g.title }));
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(`SELECT id, title FROM ${qname('galleries')} ORDER BY sort_order, title`);
+    return res.rows.map((row) => ({ id: row.id, title: row.title }));
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.galleries.map((g) => ({ id: g.id, title: g.title }));
+  }
+}
+
+export async function getMediaPage(opts: {
+  page: number;
+  pageSize: number;
+  galleryId?: string;
+}): Promise<{ items: MediaRecord[]; total: number }> {
+  const { page, pageSize, galleryId } = opts;
+  const offset = (page - 1) * pageSize;
+
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    let filtered = store.media;
+    if (galleryId) {
+      filtered = filtered.filter((m) => m.galleryId === galleryId);
+    }
+    filtered.sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+    return {
+      items: filtered.slice(offset, offset + pageSize),
+      total: filtered.length,
+    };
+  }
+
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    let itemsQuery = `SELECT * FROM ${qname('media')}`;
+    let countQuery = `SELECT count(*)::int as total FROM ${qname('media')}`;
+    const params: any[] = [];
+
+    if (galleryId) {
+      itemsQuery += ` WHERE gallery_id = $1`;
+      countQuery += ` WHERE gallery_id = $1`;
+      params.push(galleryId);
+    }
+
+    itemsQuery += ` ORDER BY sort_order, created_at LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const pageParams = [...params, pageSize, offset];
+
+    const [itemsRes, countRes] = await Promise.all([
+      db.query(itemsQuery, pageParams),
+      db.query(countQuery, params),
+    ]);
+
+    return {
+      items: itemsRes.rows.map(rowToMediaRecord),
+      total: countRes.rows[0]?.total || 0,
+    };
+  } catch (error) {
+    const store = await getLibraryFromJson();
+    let filtered = store.media;
+    if (galleryId) {
+      filtered = filtered.filter((m) => m.galleryId === galleryId);
+    }
+    filtered.sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+    return {
+      items: filtered.slice(offset, offset + pageSize),
+      total: filtered.length,
+    };
+  }
 }
 
 export function now() {
