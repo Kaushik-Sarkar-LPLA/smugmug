@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getLibrary, hasDatabase } from '@/lib/admin/library-store';
+import { getLibrary } from '@/lib/admin/library-store';
+import { hasDatabase } from '@/lib/admin/db';
 
 export const dynamic = 'force-dynamic';
 
