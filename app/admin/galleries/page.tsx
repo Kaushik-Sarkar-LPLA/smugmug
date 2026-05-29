@@ -46,7 +46,7 @@ export default async function GalleriesPage({
           <form action="/api/admin/galleries" method="post" className="glass-panel rounded-3xl p-6">
             <h2 className="font-art gold-text text-2xl">{editing ? 'Edit gallery' : 'Create gallery'}</h2>
             {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
-            <GalleryFields folders={folders} gallery={editing} />
+            <GalleryFields folders={folders} gallery={editing ?? undefined} />
             <div className="mt-6 flex flex-wrap gap-3">
               <button className="glass-button" type="submit">{editing ? 'Save gallery' : 'Create gallery'}</button>
               {editing ? (
