@@ -32,8 +32,8 @@ export default async function MediaPage({
 
   return (
     <AdminShell title="Media">
-      {params.saved ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-white/75">Media changes saved.</div> : null}
-      {params.error ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-red-100">Upload failed: {params.error}</div> : null}
+      {params.saved ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-[#17130f]/75">Media changes saved.</div> : null}
+      {params.error ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-red-700">Upload failed: {params.error}</div> : null}
 
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
         {/* Left Column: Upload Form */}
@@ -76,7 +76,7 @@ export default async function MediaPage({
           {/* Gallery Filter Bar */}
           <form method="get" className="glass-panel flex flex-col gap-3 rounded-3xl p-5 sm:flex-row sm:items-end">
             <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-xs uppercase tracking-[0.18em] text-white/50">Filter by Gallery</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-[#17130f]/50">Filter by Gallery</span>
               <select name="galleryId" defaultValue={galleryId} className="admin-input">
                 <option value="">All Galleries</option>
                 {galleries.map((g) => (
@@ -104,12 +104,12 @@ export default async function MediaPage({
                     </div>
                     <div className="flex flex-col justify-between">
                       <div>
-                        <p className="font-art text-xl text-white">{item.title}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
+                        <p className="font-art text-xl text-[#17130f]">{item.title}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#17130f]/45">
                           {item.type} · {item.provider} · {gallery?.title || 'No gallery'}
                         </p>
-                        <p className="mt-2 text-xs text-white/30 font-mono">ID: {item.id}</p>
-                        <p className="mt-3 text-sm text-white/55">{item.fileName}</p>
+                        <p className="mt-2 font-mono text-xs text-[#17130f]/30">ID: {item.id}</p>
+                        <p className="mt-3 text-sm text-[#17130f]/55">{item.fileName}</p>
                       </div>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <a className="glass-button" href={item.publicUrl} download>Download</a>
@@ -127,7 +127,7 @@ export default async function MediaPage({
               })}
             </div>
           ) : (
-            <div className="glass-panel rounded-3xl p-10 text-center text-white/50">
+            <div className="glass-panel rounded-3xl p-10 text-center text-[#17130f]/50">
               No media found.
             </div>
           )}
@@ -135,7 +135,7 @@ export default async function MediaPage({
           {/* Pagination Navigation */}
           {totalPages > 1 ? (
             <nav className="glass-panel flex flex-col items-center justify-between gap-4 rounded-3xl p-5 sm:flex-row">
-              <span className="text-sm text-white/60">
+              <span className="text-sm text-[#17130f]/60">
                 Showing {Math.min(total, (page - 1) * pageSize + 1)} - {Math.min(total, page * pageSize)} of {total} items
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -151,7 +151,7 @@ export default async function MediaPage({
                   </>
                 )}
 
-                <span className="mx-2 text-sm text-white/80 font-medium">
+                <span className="mx-2 text-sm font-medium text-[#17130f]/80">
                   Page {page} of {totalPages}
                 </span>
 

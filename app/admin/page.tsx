@@ -17,15 +17,15 @@ export default async function AdminPage() {
     <AdminShell title="Dashboard">
       <section className="grid gap-5 md:grid-cols-3">
         <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs uppercase tracking-[0.28em] text-white/45">Hero slideshow</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#17130f]/45">Hero slideshow</p>
           <p className="font-art gold-text mt-4 text-5xl">{heroCount}</p>
         </div>
         <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs uppercase tracking-[0.28em] text-white/45">Front page gallery</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#17130f]/45">Front page gallery</p>
           <p className="font-art gold-text mt-4 text-5xl">{galleryCount}</p>
         </div>
         <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs uppercase tracking-[0.28em] text-white/45">Slide duration</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#17130f]/45">Slide duration</p>
           <p className="font-art gold-text mt-4 text-5xl">{config.slideDurationSeconds}s</p>
         </div>
       </section>

@@ -10,7 +10,7 @@ export default async function FoldersPage({ searchParams }: { searchParams: Prom
 
   return (
     <AdminShell title="Folders">
-      {params.saved ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-white/75">Folder changes saved.</div> : null}
+      {params.saved ? <div className="glass-panel mb-6 rounded-2xl p-4 text-sm text-[#17130f]/75">Folder changes saved.</div> : null}
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form action="/api/admin/folders" method="post" className="glass-panel rounded-3xl p-6">
           <h2 className="font-art gold-text text-2xl">Create folder</h2>
@@ -20,7 +20,7 @@ export default async function FoldersPage({ searchParams }: { searchParams: Prom
         <div className="space-y-4">
           {folders.map((folder) => (
             <details key={folder.id} className="glass-panel rounded-3xl p-5">
-              <summary className="cursor-pointer font-art text-xl text-white">{folder.title}</summary>
+              <summary className="cursor-pointer font-art text-xl text-[#17130f]">{folder.title}</summary>
               <form action="/api/admin/folders" method="post" className="mt-5 grid gap-4">
                 <input type="hidden" name="id" value={folder.id} />
                 <FolderFields folders={folders.filter((candidate) => candidate.id !== folder.id)} folder={folder} />
