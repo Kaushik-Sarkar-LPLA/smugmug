@@ -7,8 +7,9 @@ export async function POST(request: NextRequest) {
   const password = String(form.get('password') || '');
   const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
 
-  const forwardedProto = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
   const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || request.nextUrl.host;
+  const isLocal = forwardedHost.includes('localhost') || forwardedHost.includes('127.0.0.1') || forwardedHost.includes('192.168.') || forwardedHost.includes('10.0.');
+  const forwardedProto = isLocal ? 'http' : 'https';
   const baseUrl = `${forwardedProto}://${forwardedHost}`;
 
   if (username !== expectedUsername || !verifyPassword(password)) {
