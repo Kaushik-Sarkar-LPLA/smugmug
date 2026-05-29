@@ -199,6 +199,65 @@ export async function migrateJsonLibraryToDatabase() {
   if (jsonStore.folders.length || jsonStore.galleries.length || jsonStore.media.length) await saveLibrary(jsonStore);
 }
 
+export async function getFoldersForAdmin(): Promise<FolderRecord[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.folders;
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(`SELECT * FROM ${qname('folders')} ORDER BY sort_order, title`);
+    return res.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      parentId: row.parent_id,
+      visibility: row.visibility,
+      sortOrder: row.sort_order,
+      smugmugUri: row.smugmug_uri || undefined,
+      originalUrl: row.original_url || undefined,
+      urlPath: row.url_path || undefined,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+    }));
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.folders;
+  }
+}
+
+export async function getGalleriesForAdmin(): Promise<GalleryRecord[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.galleries;
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(`SELECT * FROM ${qname('galleries')} ORDER BY sort_order, title`);
+    return res.rows.map((row) => ({
+      id: row.id,
+      folderId: row.folder_id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      visibility: row.visibility,
+      sortOrder: row.sort_order,
+      coverMediaId: row.cover_media_id,
+      smugmugUri: row.smugmug_uri || undefined,
+      originalUrl: row.original_url || undefined,
+      urlPath: row.url_path || undefined,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+    }));
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.galleries;
+  }
+}
+
 export async function getGalleriesShallow(): Promise<{ id: string; title: string }[]> {
   if (!hasDatabase()) {
     const store = await getLibraryFromJson();
