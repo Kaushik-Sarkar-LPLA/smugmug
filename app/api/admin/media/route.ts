@@ -3,7 +3,18 @@ import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
-import { getLibrary, id, mediaRoot, now, saveLibrary, slugify, type Visibility } from '@/lib/admin/library-store';
+import {
+  getLibrary,
+  getMediaById,
+  id,
+  mediaRoot,
+  moveMediaInGallery,
+  now,
+  saveLibrary,
+  setGalleryCoverMedia,
+  slugify,
+  type Visibility,
+} from '@/lib/admin/library-store';
 import { adminRedirectUrl } from '@/lib/admin/redirect';
 
 async function uploadPhotoToImgBB(file: File, name: string) {
@@ -20,14 +31,23 @@ async function uploadPhotoToImgBB(file: File, name: string) {
   return body.data;
 }
 
+function mediaRedirect(request: NextRequest, form: FormData) {
+  const redirectUrl = adminRedirectUrl(request, '/admin/media');
+  const page = form.get('page');
+  const galleryId = form.get('galleryId');
+  if (page) redirectUrl.searchParams.set('page', String(page));
+  if (galleryId) redirectUrl.searchParams.set('galleryId', String(galleryId));
+  return redirectUrl;
+}
+
 export async function POST(request: NextRequest) {
   if (!requireAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const form = await request.formData();
   const action = String(form.get('action') || 'upload');
-  const store = await getLibrary();
-  const timestamp = now();
 
   if (action === 'delete') {
+    const store = await getLibrary();
+    const timestamp = now();
     const mediaId = String(form.get('id') || '');
     const media = store.media.find((item) => item.id === mediaId);
     if (media?.localPath) await fs.rm(media.localPath, { force: true });
@@ -35,18 +55,42 @@ export async function POST(request: NextRequest) {
     await saveLibrary(store);
     revalidatePath('/admin');
     revalidatePath('/admin/media');
-    const redirectUrl = adminRedirectUrl(request, '/admin/media');
-    const page = form.get('page');
-    const galleryId = form.get('galleryId');
-    if (page) redirectUrl.searchParams.set('page', String(page));
-    if (galleryId) redirectUrl.searchParams.set('galleryId', String(galleryId));
+    revalidatePath('/admin/galleries');
+    const redirectUrl = mediaRedirect(request, form);
     redirectUrl.searchParams.set('saved', '1');
     return NextResponse.redirect(redirectUrl, 303);
   }
 
+  if (action === 'move-up' || action === 'move-down') {
+    const mediaId = String(form.get('id') || '');
+    const moved = await moveMediaInGallery(mediaId, action === 'move-up' ? 'up' : 'down');
+    revalidatePath('/admin/media');
+    revalidatePath('/admin/galleries');
+    const redirectUrl = mediaRedirect(request, form);
+    if (moved) redirectUrl.searchParams.set('saved', '1');
+    return NextResponse.redirect(redirectUrl, 303);
+  }
+
+  if (action === 'set-cover') {
+    const mediaId = String(form.get('id') || '');
+    const galleryId = String(form.get('galleryId') || '');
+    const media = await getMediaById(mediaId);
+    if (galleryId && media?.galleryId === galleryId) {
+      await setGalleryCoverMedia(galleryId, mediaId);
+    }
+    revalidatePath('/admin/media');
+    revalidatePath('/admin/galleries');
+    revalidatePath('/Pixilens-Portfolio');
+    const redirectUrl = mediaRedirect(request, form);
+    redirectUrl.searchParams.set('saved', 'cover');
+    return NextResponse.redirect(redirectUrl, 303);
+  }
+
+  const store = await getLibrary();
+  const timestamp = now();
   const file = form.get('file');
   if (!(file instanceof File) || file.size === 0) {
-    const redirectUrl = adminRedirectUrl(request, '/admin/media');
+    const redirectUrl = mediaRedirect(request, form);
     redirectUrl.searchParams.set('error', 'file');
     return NextResponse.redirect(redirectUrl, 303);
   }
@@ -60,7 +104,7 @@ export async function POST(request: NextRequest) {
 
   if (type === 'photo') {
     if (!file.type.startsWith('image/')) {
-      const redirectUrl = adminRedirectUrl(request, '/admin/media');
+      const redirectUrl = mediaRedirect(request, form);
       redirectUrl.searchParams.set('error', 'type');
       return NextResponse.redirect(redirectUrl, 303);
     }
@@ -116,8 +160,7 @@ export async function POST(request: NextRequest) {
   await saveLibrary(store);
   revalidatePath('/admin');
   revalidatePath('/admin/media');
-  const redirectUrl = adminRedirectUrl(request, '/admin/media');
-  if (galleryId) redirectUrl.searchParams.set('galleryId', galleryId);
+  const redirectUrl = mediaRedirect(request, form);
   redirectUrl.searchParams.set('saved', '1');
   return NextResponse.redirect(redirectUrl, 303);
 }

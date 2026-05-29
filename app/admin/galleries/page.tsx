@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminShell } from '@/components/AdminShell';
-import { getFoldersForAdmin, getGalleriesForAdmin, type GalleryRecord, type FolderRecord } from '@/lib/admin/library-store';
+import { getFoldersForAdmin, getGalleriesForAdmin, getMediaById, type GalleryRecord, type FolderRecord } from '@/lib/admin/library-store';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Galleries Admin - Pixilens', robots: { index: false, follow: false } };
@@ -22,6 +22,7 @@ export default async function GalleriesPage({
   const safePage = Math.min(page, totalPages);
   const pageGalleries = galleries.slice((safePage - 1) * pageSize, safePage * pageSize);
   const editing = params.edit ? galleries.find((gallery) => gallery.id === params.edit) : null;
+  const editingCover = editing?.coverMediaId ? await getMediaById(editing.coverMediaId) : null;
 
   const buildPageUrl = (nextPage: number) => {
     const urlParams = new URLSearchParams();
@@ -46,11 +47,14 @@ export default async function GalleriesPage({
           <form action="/api/admin/galleries" method="post" className="glass-panel rounded-3xl p-6">
             <h2 className="font-art gold-text text-2xl">{editing ? 'Edit gallery' : 'Create gallery'}</h2>
             {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
-            <GalleryFields folders={folders} gallery={editing ?? undefined} />
+            <GalleryFields folders={folders} gallery={editing ?? undefined} coverPreviewUrl={editingCover?.displayUrl} />
             <div className="mt-6 flex flex-wrap gap-3">
               <button className="glass-button" type="submit">{editing ? 'Save gallery' : 'Create gallery'}</button>
               {editing ? (
                 <>
+                  <Link href={`/admin/media?galleryId=${encodeURIComponent(editing.id)}`} className="glass-button">
+                    Manage images & cover
+                  </Link>
                   <button className="glass-button" name="action" value="delete" type="submit">Delete</button>
                   <Link href={`?page=${safePage}`} className="glass-button">Cancel</Link>
                 </>
@@ -138,9 +142,23 @@ function GalleryRow({
   );
 }
 
-function GalleryFields({ folders, gallery }: { folders: FolderRecord[]; gallery?: GalleryRecord }) {
+function GalleryFields({
+  folders,
+  gallery,
+  coverPreviewUrl,
+}: {
+  folders: FolderRecord[];
+  gallery?: GalleryRecord;
+  coverPreviewUrl?: string;
+}) {
   return (
     <div className="mt-5 grid gap-4">
+      {coverPreviewUrl ? (
+        <div className="overflow-hidden rounded-2xl bg-black/5">
+          <img src={coverPreviewUrl} alt="Gallery cover" className="aspect-[3/4] w-full object-cover object-center" />
+          <p className="px-1 py-2 text-[11px] text-[#17130f]/50">Current cover image</p>
+        </div>
+      ) : null}
       <label className="admin-label">Title<input className="admin-input" name="title" defaultValue={gallery?.title} required /></label>
       <label className="admin-label">Slug<input className="admin-input" name="slug" defaultValue={gallery?.slug} /></label>
       <label className="admin-label">Description<textarea className="admin-input min-h-24" name="description" defaultValue={gallery?.description} /></label>
@@ -149,7 +167,7 @@ function GalleryFields({ folders, gallery }: { folders: FolderRecord[]; gallery?
         <label className="admin-label">Cover media ID</label>
         <input className="admin-input" name="coverMediaId" defaultValue={gallery?.coverMediaId || ''} placeholder="Auto (paste a media ID)" />
         <p className="text-[11px] text-[#17130f]/50">
-          Leave blank for auto-selection. Copy a media ID from the Media list to set a custom cover.
+          Prefer picking visually: use Manage images & cover to set the gallery thumbnail from the media page.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">

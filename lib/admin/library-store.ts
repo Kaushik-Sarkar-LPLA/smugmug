@@ -258,19 +258,125 @@ export async function getGalleriesForAdmin(): Promise<GalleryRecord[]> {
   }
 }
 
-export async function getGalleriesShallow(): Promise<{ id: string; title: string }[]> {
+export async function getGalleriesShallow(): Promise<{ id: string; title: string; coverMediaId: string }[]> {
   if (!hasDatabase()) {
     const store = await getLibraryFromJson();
-    return store.galleries.map((g) => ({ id: g.id, title: g.title }));
+    return store.galleries.map((g) => ({ id: g.id, title: g.title, coverMediaId: g.coverMediaId || '' }));
   }
   try {
     await ensureDatabase();
     const db = getPool();
-    const res = await db.query(`SELECT id, title FROM ${qname('galleries')} ORDER BY sort_order, title`);
-    return res.rows.map((row) => ({ id: row.id, title: row.title }));
+    const res = await db.query(`SELECT id, title, cover_media_id FROM ${qname('galleries')} ORDER BY sort_order, title`);
+    return res.rows.map((row) => ({ id: row.id, title: row.title, coverMediaId: row.cover_media_id || '' }));
   } catch {
     const store = await getLibraryFromJson();
-    return store.galleries.map((g) => ({ id: g.id, title: g.title }));
+    return store.galleries.map((g) => ({ id: g.id, title: g.title, coverMediaId: g.coverMediaId || '' }));
+  }
+}
+
+export async function getGalleryById(galleryId: string): Promise<GalleryRecord | null> {
+  if (!galleryId) return null;
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.galleries.find((g) => g.id === galleryId) || null;
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(`SELECT * FROM ${qname('galleries')} WHERE id = $1 LIMIT 1`, [galleryId]);
+    const row = res.rows[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      folderId: row.folder_id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      visibility: row.visibility,
+      sortOrder: row.sort_order,
+      coverMediaId: row.cover_media_id,
+      smugmugUri: row.smugmug_uri || undefined,
+      originalUrl: row.original_url || undefined,
+      urlPath: row.url_path || undefined,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+    };
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.galleries.find((g) => g.id === galleryId) || null;
+  }
+}
+
+export async function setGalleryCoverMedia(galleryId: string, mediaId: string) {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    store.galleries = store.galleries.map((gallery) =>
+      gallery.id === galleryId ? { ...gallery, coverMediaId: mediaId, updatedAt: now() } : gallery,
+    );
+    await saveLibraryToJson(store);
+    return;
+  }
+  await ensureDatabase();
+  const db = getPool();
+  await db.query(`UPDATE ${qname('galleries')} SET cover_media_id = $1, updated_at = now() WHERE id = $2`, [mediaId, galleryId]);
+}
+
+async function listMediaInGallery(galleryId: string): Promise<MediaRecord[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.media
+      .filter((item) => item.galleryId === galleryId)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+  }
+  await ensureDatabase();
+  const db = getPool();
+  const res = await db.query(`SELECT * FROM ${qname('media')} WHERE gallery_id = $1 ORDER BY sort_order, created_at`, [galleryId]);
+  return res.rows.map(rowToMediaRecord);
+}
+
+async function updateMediaSortOrder(mediaId: string, sortOrder: number) {
+  const timestamp = now();
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    store.media = store.media.map((item) => (item.id === mediaId ? { ...item, sortOrder, updatedAt: timestamp } : item));
+    await saveLibraryToJson(store);
+    return;
+  }
+  await ensureDatabase();
+  const db = getPool();
+  await db.query(`UPDATE ${qname('media')} SET sort_order = $1, updated_at = now() WHERE id = $2`, [sortOrder, mediaId]);
+}
+
+export async function moveMediaInGallery(mediaId: string, direction: 'up' | 'down'): Promise<boolean> {
+  const current = await getMediaById(mediaId);
+  if (!current?.galleryId) return false;
+  const items = await listMediaInGallery(current.galleryId);
+  const index = items.findIndex((item) => item.id === mediaId);
+  if (index < 0) return false;
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= items.length) return false;
+  const neighbor = items[targetIndex];
+  await Promise.all([
+    updateMediaSortOrder(current.id, neighbor.sortOrder),
+    updateMediaSortOrder(neighbor.id, current.sortOrder),
+  ]);
+  return true;
+}
+
+export async function getMediaById(mediaId: string): Promise<MediaRecord | null> {
+  if (!mediaId) return null;
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.media.find((item) => item.id === mediaId) || null;
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(`SELECT * FROM ${qname('media')} WHERE id = $1 LIMIT 1`, [mediaId]);
+    return res.rows[0] ? rowToMediaRecord(res.rows[0]) : null;
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.media.find((item) => item.id === mediaId) || null;
   }
 }
 
