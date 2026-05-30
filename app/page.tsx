@@ -3,7 +3,6 @@ import { SiteShell } from '@/components/SiteShell';
 import { HeroSlideshow } from '@/components/home/HeroSlideshow';
 import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
-import { contact } from '@/lib/site-content';
 
 export const revalidate = 0;
 
@@ -26,7 +25,7 @@ export default async function Home() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link href="/Services-and-Pricing" className="glass-button">Services</Link>
-              <a href={contact.honeybookHref} className="glass-button">Get Started</a>
+              <Link href="/Get-Started" className="glass-button">Get Started</Link>
             </div>
           </div>
         </div>

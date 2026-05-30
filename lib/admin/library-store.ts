@@ -443,3 +443,146 @@ export async function getMediaPage(opts: {
 export function now() {
   return new Date().toISOString();
 }
+
+function galleryFromRow(row: any): GalleryRecord {
+  return {
+    id: row.id,
+    folderId: row.folder_id,
+    title: row.title,
+    slug: row.slug,
+    description: row.description,
+    visibility: row.visibility,
+    sortOrder: row.sort_order,
+    coverMediaId: row.cover_media_id,
+    smugmugUri: row.smugmug_uri || undefined,
+    originalUrl: row.original_url || undefined,
+    urlPath: row.url_path || undefined,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+  };
+}
+
+const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status = 'done')`;
+
+export async function getFolderByUrlPath(urlPath: string): Promise<FolderRecord | null> {
+  const folders = await getFoldersForAdmin();
+  return folders.find((folder) => folder.urlPath === urlPath) || null;
+}
+
+export async function getPublicGalleriesForFolder(folderId: string): Promise<GalleryRecord[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.galleries
+      .filter((gallery) => gallery.folderId === folderId && gallery.visibility === 'public')
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(
+      `SELECT * FROM ${qname('galleries')} WHERE folder_id = $1 AND visibility = 'public' ORDER BY sort_order, title`,
+      [folderId],
+    );
+    return res.rows.map(galleryFromRow);
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.galleries
+      .filter((gallery) => gallery.folderId === folderId && gallery.visibility === 'public')
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+  }
+}
+
+export async function getPublicMediaForGallery(galleryId: string): Promise<MediaRecord[]> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return store.media
+      .filter(
+        (item) =>
+          item.galleryId === galleryId &&
+          item.visibility !== 'private' &&
+          (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+  }
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const res = await db.query(
+      `SELECT * FROM ${qname('media')} WHERE gallery_id = $1 AND ${PUBLIC_MEDIA_WHERE} ORDER BY sort_order, created_at`,
+      [galleryId],
+    );
+    return res.rows.map(rowToMediaRecord);
+  } catch {
+    const store = await getLibraryFromJson();
+    return store.media
+      .filter(
+        (item) =>
+          item.galleryId === galleryId &&
+          item.visibility !== 'private' &&
+          (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+  }
+}
+
+export async function getPortfolioGallerySummaries(folderId: string): Promise<
+  Array<{ gallery: GalleryRecord; mediaCount: number; cover: MediaRecord | null }>
+> {
+  const galleries = await getPublicGalleriesForFolder(folderId);
+  if (!galleries.length) return [];
+
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return galleries.map((gallery) => {
+      const images = store.media
+        .filter(
+          (item) =>
+            item.galleryId === gallery.id &&
+            item.visibility !== 'private' &&
+            (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+      const cover = gallery.coverMediaId
+        ? images.find((item) => item.id === gallery.coverMediaId) || images[0] || null
+        : images[0] || null;
+      return { gallery, mediaCount: images.length, cover };
+    });
+  }
+
+  await ensureDatabase();
+  const db = getPool();
+  const galleryIds = galleries.map((gallery) => gallery.id);
+  const coverIds = galleries.map((gallery) => gallery.coverMediaId).filter(Boolean);
+
+  const [countsRes, coverRes, firstRes] = await Promise.all([
+    db.query(
+      `SELECT gallery_id, count(*)::int AS total FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} GROUP BY gallery_id`,
+      [galleryIds],
+    ),
+    coverIds.length
+      ? db.query(`SELECT * FROM ${qname('media')} WHERE id = ANY($1::text[])`, [coverIds])
+      : Promise.resolve({ rows: [] }),
+    db.query(
+      `SELECT DISTINCT ON (gallery_id) * FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} ORDER BY gallery_id, sort_order, created_at`,
+      [galleryIds],
+    ),
+  ]);
+
+  const countByGallery = new Map<string, number>(countsRes.rows.map((row) => [row.gallery_id, row.total]));
+  const coverById = new Map<string, MediaRecord>(coverRes.rows.map((row) => [row.id, rowToMediaRecord(row)]));
+  const firstByGallery = new Map<string, MediaRecord>(firstRes.rows.map((row) => [row.gallery_id, rowToMediaRecord(row)]));
+
+  return galleries.map((gallery) => {
+    let cover: MediaRecord | null = null;
+    if (gallery.coverMediaId) {
+      const selected = coverById.get(gallery.coverMediaId);
+      if (selected && selected.galleryId === gallery.id) cover = selected;
+    }
+    if (!cover) cover = firstByGallery.get(gallery.id) || null;
+    return {
+      gallery,
+      mediaCount: countByGallery.get(gallery.id) || 0,
+      cover,
+    };
+  });
+}

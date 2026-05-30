@@ -1,4 +1,9 @@
-import { getLibrary, type MediaRecord } from '@/lib/admin/library-store';
+import {
+  getFolderByUrlPath,
+  getPortfolioGallerySummaries,
+  getPublicMediaForGallery,
+  type MediaRecord,
+} from '@/lib/admin/library-store';
 import portfolioData from '@/app/portfolio-data.json';
 
 export type PortfolioGallery = {
@@ -17,8 +22,10 @@ type StaticImage = { url: string; fileName: string; webUri: string; width: numbe
 type StaticGallery = { title: string; urlName: string; webUri: string; imageCount: number; cover: StaticImage | null; images: StaticImage[] };
 type StaticCategory = { label: string; path: string; slug: string; galleryCount: number; galleries: StaticGallery[] };
 
-const slugFromTitle = (title: string) =>
-  title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'gallery';
+export function portfolioSlug(title: string, slug?: string) {
+  if (slug?.trim()) return slug.trim();
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'gallery';
+}
 
 function staticFallback(): PortfolioGallery[] {
   return (portfolioData as StaticCategory[]).map((cat) => {
@@ -26,12 +33,24 @@ function staticFallback(): PortfolioGallery[] {
     for (const g of cat.galleries) {
       for (const img of g.images) {
         images.push({
-          id: img.webUri, galleryId: cat.slug, type: 'photo', title: img.fileName, caption: '', slug: '',
-          visibility: 'public', sortOrder: 0, provider: 'imgbb',
-          publicUrl: img.url, displayUrl: img.url,
-          fileName: img.fileName, mimeType: 'image/jpeg', sizeBytes: 0,
-          width: img.width, height: img.height,
-          createdAt: '', updatedAt: '',
+          id: img.webUri,
+          galleryId: cat.slug,
+          type: 'photo',
+          title: img.fileName,
+          caption: '',
+          slug: '',
+          visibility: 'public',
+          sortOrder: 0,
+          provider: 'imgbb',
+          publicUrl: img.url,
+          displayUrl: img.url,
+          fileName: img.fileName,
+          mimeType: 'image/jpeg',
+          sizeBytes: 0,
+          width: img.width,
+          height: img.height,
+          createdAt: '',
+          updatedAt: '',
         });
       }
     }
@@ -41,7 +60,7 @@ function staticFallback(): PortfolioGallery[] {
       title: cat.label,
       slug: cat.slug,
       description: '',
-      mediaCount: cat.galleries.reduce((s, g) => s + g.imageCount, 0),
+      mediaCount: cat.galleries.reduce((sum, gallery) => sum + gallery.imageCount, 0),
       coverUrl: cover?.url || '',
       coverWidth: cover?.width,
       coverHeight: cover?.height,
@@ -50,38 +69,52 @@ function staticFallback(): PortfolioGallery[] {
   });
 }
 
-export async function getPortfolioGalleries(): Promise<PortfolioGallery[]> {
-  let lib;
-  try { lib = await getLibrary(); } catch { return staticFallback(); }
-  if (!lib.folders.length) return staticFallback();
-  const pf = lib.folders.find((f) => f.urlPath === '/Pixilens-Portfolio');
-  if (!pf) return staticFallback();
-  const folderGalleries = lib.galleries
-    .filter((g) => g.folderId === pf.id)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+function toPortfolioGallery(
+  summary: { gallery: { id: string; title: string; slug: string; description: string }; mediaCount: number; cover: MediaRecord | null },
+  images: MediaRecord[] = [],
+): PortfolioGallery {
+  const slug = portfolioSlug(summary.gallery.title, summary.gallery.slug);
+  const cover = summary.cover;
+  return {
+    id: summary.gallery.id,
+    title: summary.gallery.title,
+    slug,
+    description: summary.gallery.description,
+    mediaCount: summary.mediaCount,
+    coverUrl: cover?.displayUrl || cover?.publicUrl || '',
+    coverWidth: cover?.width,
+    coverHeight: cover?.height,
+    images,
+  };
+}
 
-  return folderGalleries.map((g) => {
-    const images = lib.media
-      .filter((m) => m.galleryId === g.id && (m.migrationStatus === 'done' || m.migrationStatus === undefined) && m.visibility !== 'private')
-      .sort((a, b) => a.sortOrder - b.sortOrder);
-    const cover = g.coverMediaId
-      ? images.find((m) => m.id === g.coverMediaId)
-      : images[0];
-    return {
-      id: g.id,
-      title: g.title,
-      slug: slugFromTitle(g.title),
-      description: g.description,
-      mediaCount: images.length,
-      coverUrl: cover?.displayUrl || cover?.publicUrl || '',
-      coverWidth: cover?.width,
-      coverHeight: cover?.height,
-      images,
-    };
-  });
+export async function getPortfolioGalleries(): Promise<PortfolioGallery[]> {
+  try {
+    const folder = await getFolderByUrlPath('/Pixilens-Portfolio');
+    if (!folder) return staticFallback();
+    const summaries = await getPortfolioGallerySummaries(folder.id);
+    if (!summaries.length) return staticFallback();
+    return summaries.map((summary) => toPortfolioGallery(summary));
+  } catch {
+    return staticFallback();
+  }
 }
 
 export async function findPortfolioGallery(slug: string): Promise<PortfolioGallery | null> {
-  const galleries = await getPortfolioGalleries();
-  return galleries.find((g) => g.slug === slug) || null;
+  try {
+    const folder = await getFolderByUrlPath('/Pixilens-Portfolio');
+    if (!folder) return staticFallback().find((gallery) => gallery.slug === slug) || null;
+
+    const summaries = await getPortfolioGallerySummaries(folder.id);
+    const summary = summaries.find(
+      (entry) => portfolioSlug(entry.gallery.title, entry.gallery.slug) === slug,
+    );
+    if (!summary) return null;
+
+    const images = await getPublicMediaForGallery(summary.gallery.id);
+    const cover = summary.cover || images[0] || null;
+    return toPortfolioGallery({ ...summary, cover, mediaCount: images.length }, images);
+  } catch {
+    return staticFallback().find((gallery) => gallery.slug === slug) || null;
+  }
 }
