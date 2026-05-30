@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
 import { field, formatRows, sendPixilensEmail } from '@/lib/email';
+import { buildCalendarInvite, parseDurationMinutes, resolveEventTimezone } from '@/lib/calendar';
 import { PhotoboothRentalForm } from './PhotoboothRentalForm';
 
 export const metadata = {
@@ -149,12 +150,26 @@ async function sendPhotoboothEnquiry(formData: FormData) {
     redirect('/Photobooth-Enquiry?status=missing');
   }
 
+  const calendarInvite = buildCalendarInvite({
+    summary: `Pixilens Photobooth — ${resolvedEventType(data)}`,
+    description: formatText(data),
+    location: `${data.venueName}, ${venueAddress(data)}`,
+    attendeeName: fullName(data),
+    attendeeEmail: data.email,
+    date: data.eventDate,
+    time: data.eventTime,
+    durationMinutes: parseDurationMinutes(data.numberOfHours),
+    timezone: resolveEventTimezone(data.area),
+    filename: 'pixilens-photobooth.ics',
+  });
+
   const sent = await sendPixilensEmail({
     toUser: data.email,
     userName: fullName(data),
     subject: `Pixilens photo booth rental from ${fullName(data)}`,
     text: formatText(data),
     html: formatHtml(data),
+    calendarInvite,
   });
 
   redirect(sent ? '/Photobooth-Enquiry?status=sent' : '/Photobooth-Enquiry?status=email-not-configured');
@@ -169,7 +184,7 @@ export default async function PhotoboothEnquiryPage({ searchParams }: { searchPa
       </PageHero>
 
       <section className="mx-auto max-w-5xl px-5 pb-20 md:px-8">
-        {params.status === 'sent' ? <div className="glass-panel mb-8 rounded-xl p-5 text-center text-[#17130f]/75">Thank you. Your photo booth rental form was sent to Pixilens and a confirmation email was sent to you.</div> : null}
+        {params.status === 'sent' ? <div className="glass-panel mb-8 rounded-xl p-5 text-center text-[#17130f]/75">Thank you. Your photo booth rental form was sent to Pixilens, a confirmation email was sent to you, and a calendar invite was attached.</div> : null}
         {params.status === 'missing' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Please fill out all required fields before sending.</div> : null}
         {params.status === 'email-not-configured' ? <div className="glass-panel mb-8 rounded-xl border-red-200/70 p-5 text-center text-red-700">Email sending is not configured yet. Please email {contact.email} directly.</div> : null}
         <PhotoboothRentalForm action={sendPhotoboothEnquiry} agreementText={agreementText} />
