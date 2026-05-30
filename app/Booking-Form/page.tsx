@@ -29,6 +29,7 @@ type BookingState = {
   address: string;
   phone: string;
   date: string;
+  time: string;
   service: string;
   type: string;
   otherType: string;
@@ -47,7 +48,7 @@ type BookingState = {
 };
 
 function formatText(data: BookingState) {
-  return `New Pixilens booking form\n\nName: ${data.name}\nEmail: ${data.email}\nYour Address: ${data.address}\nPhone Number: ${data.phone}\nDate: ${data.date}\nService: ${data.service}\nType: ${data.type}\nIf other selected above: ${data.otherType || 'Not provided'}\nDelivery: ${data.delivery.join(', ')}\nIf Other Mentioned above in Delivery: ${data.otherDelivery || 'Not provided'}\nEvents Details and Important Notes:\n${data.details}\n\nEvent Address: ${data.eventAddress}\nInclude Digital Photobooth?: ${data.includePhotobooth}\nYoutube Live streaming (1 Camera): ${data.youtubeLive}\nAgree with Release Agreement: ${data.releaseAgreement}\nSignature: ${data.signature}\nTotal Hours: ${data.totalHours}\nNumber of hours: ${data.numberOfHours}\nInclude Digital Video Guestbook?: ${data.includeVideoGuestbook}\n360 videobooth with GoPro: ${data.include360}`;
+  return `New Pixilens booking form\n\nName: ${data.name}\nEmail: ${data.email}\nYour Address: ${data.address}\nPhone Number: ${data.phone}\nDate: ${data.date}\nTime: ${data.time}\nService: ${data.service}\nType: ${data.type}\nIf other selected above: ${data.otherType || 'Not provided'}\nDelivery: ${data.delivery.join(', ')}\nIf Other Mentioned above in Delivery: ${data.otherDelivery || 'Not provided'}\nEvents Details and Important Notes:\n${data.details}\n\nEvent Address: ${data.eventAddress}\nInclude Digital Photobooth?: ${data.includePhotobooth}\nYoutube Live streaming (1 Camera): ${data.youtubeLive}\nAgree with Release Agreement: ${data.releaseAgreement}\nSignature: ${data.signature}\nTotal Hours: ${data.totalHours}\nNumber of hours: ${data.numberOfHours}\nInclude Digital Video Guestbook?: ${data.includeVideoGuestbook}\n360 videobooth with GoPro: ${data.include360}`;
 }
 
 function formatHtml(data: BookingState) {
@@ -57,6 +58,7 @@ function formatHtml(data: BookingState) {
     ['Your Address', data.address],
     ['Phone Number', data.phone],
     ['Date', data.date],
+    ['Time', data.time],
     ['Service', data.service],
     ['Type', data.type],
     ['If other selected above', data.otherType || 'Not provided'],
@@ -83,6 +85,7 @@ async function sendBookingForm(formData: FormData) {
     address: field(formData, 'address'),
     phone: field(formData, 'phone'),
     date: field(formData, 'date'),
+    time: field(formData, 'time'),
     service: field(formData, 'service'),
     type: field(formData, 'type'),
     otherType: field(formData, 'otherType'),
@@ -100,7 +103,7 @@ async function sendBookingForm(formData: FormData) {
     include360: field(formData, 'include360'),
   };
 
-  if (!data.name || !data.email || !data.address || !data.phone || !data.date || !data.service || !data.type || data.delivery.length === 0 || !data.details || !data.eventAddress || !data.includePhotobooth || !data.youtubeLive || data.releaseAgreement !== 'Yes' || !data.signature || !data.totalHours || !data.numberOfHours || !data.includeVideoGuestbook || !data.include360) {
+  if (!data.name || !data.email || !data.address || !data.phone || !data.date || !data.time || !data.service || !data.type || data.delivery.length === 0 || !data.details || !data.eventAddress || !data.includePhotobooth || !data.youtubeLive || data.releaseAgreement !== 'Yes' || !data.signature || !data.totalHours || !data.numberOfHours || !data.includeVideoGuestbook || !data.include360) {
     redirect('/Booking-Form?status=missing');
   }
 
@@ -111,6 +114,7 @@ async function sendBookingForm(formData: FormData) {
     attendeeName: data.name,
     attendeeEmail: data.email,
     date: data.date,
+    time: data.time,
     durationMinutes: parseDurationMinutes(data.numberOfHours, parseDurationMinutes(String(data.totalHours), 120)),
     filename: 'pixilens-booking.ics',
   });
@@ -145,7 +149,8 @@ export default async function BookingFormPage({ searchParams }: { searchParams: 
             <label className="public-label sm:col-span-2">Name *<input name="name" required className="public-input" /></label>
             <label className="public-label">Email *<input name="email" type="email" required className="public-input" /></label>
             <label className="public-label">Phone Number *<input name="phone" required className="public-input" /></label>
-            <label className="public-label sm:col-span-2">Date *<input name="date" type="date" required className="public-input public-date" /></label>
+            <label className="public-label">Date *<input name="date" type="date" required className="public-input public-date" /></label>
+            <label className="public-label">Time *<input name="time" type="time" required className="public-input public-date" /></label>
             <label className="public-label">Service *<select name="service" required className="public-input public-select"><option value="">Please Select</option>{services.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label">Type *<select name="type" required className="public-input public-select"><option value="">Please Select</option>{eventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="public-label sm:col-span-2">If other selected above<input name="otherType" className="public-input" /></label>
