@@ -13,7 +13,8 @@ function publicOrigin(request: NextRequest) {
   const hostname = host.split(':')[0];
   const forwarded = request.headers.get('x-forwarded-proto');
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-  const proto = forwarded || (isLocal ? 'http' : 'https');
+  const isPixilensDomain = hostname === 'pixilens.com' || hostname.endsWith('.pixilens.com') || hostname.endsWith('.pixilens.online');
+  const proto = isPixilensDomain ? 'https' : forwarded || (isLocal ? 'http' : 'https');
   return `${proto}://${hostname}`;
 }
 
