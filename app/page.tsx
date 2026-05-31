@@ -42,6 +42,7 @@ export default async function Home() {
                 height={slide.height || 800}
                 className="h-auto w-full object-cover opacity-95 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
                 sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                loading={index < 6 ? 'eager' : 'lazy'}
               />
             </figure>
           ))}

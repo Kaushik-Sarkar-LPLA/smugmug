@@ -4,77 +4,86 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
 
+function slideSrc(slide: HomepageItem) {
+  return slide.displayUrl || slide.imageUrl;
+}
+
 export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; duration: number }) {
-  const [loaded, setLoaded] = useState<Set<string>>(new Set());
+  const items = useMemo(() => slides.filter(Boolean), [slides]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+  const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
+
+  const activeSlide = items[activeIndex] || null;
+  const nextIndex = items.length ? (activeIndex + 1) % items.length : 0;
+  const nextSlide = items[nextIndex] || null;
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  const preloadSlides = useMemo(() => {
-    const max = isMobile ? 3 : 10;
-    return slides.slice(0, max);
-  }, [slides, isMobile]);
-
-  const loadedSlides = useMemo(() => preloadSlides.filter((slide) => loaded.has(slide.id)), [preloadSlides, loaded]);
-  const activeSlide = loadedSlides.length > 0 ? loadedSlides[activeIndex % loadedSlides.length] : null;
-  const loadingPercent = preloadSlides.length ? Math.round((loaded.size / preloadSlides.length) * 100) : 100;
+    setActiveIndex(0);
+    setLoadedIds(new Set());
+  }, [items]);
 
   useEffect(() => {
-    if (preloadSlides.length === 0) return;
-    // Reset loaded state when slides change so new slides animate in
-    setLoaded(new Set());
-  }, [preloadSlides]);
+    if (!nextSlide || loadedIds.has(nextSlide.id)) return;
+    const img = new window.Image();
+    img.src = slideSrc(nextSlide);
+  }, [nextSlide, loadedIds]);
 
   useEffect(() => {
-    if (loadedSlides.length <= 1) return;
+    if (items.length <= 1) return;
     const timer = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % loadedSlides.length);
+      setActiveIndex((index) => (index + 1) % items.length);
       setProgressKey((key) => key + 1);
     }, duration * 1000);
     return () => window.clearInterval(timer);
-  }, [duration, loadedSlides.length]);
+  }, [duration, items.length]);
+
+  const markLoaded = (id: string) => {
+    setLoadedIds((current) => {
+      if (current.has(id)) return current;
+      const next = new Set(current);
+      next.add(id);
+      return next;
+    });
+  };
+
+  if (!items.length) {
+    return <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />;
+  }
+
+  const firstLoaded = Boolean(activeSlide && loadedIds.has(activeSlide.id));
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ '--slide-duration': `${duration}s` } as React.CSSProperties}>
-      {preloadSlides.map((slide, index) => (
-        <Image
-          key={slide.id}
-          src={slide.imageUrl}
-          alt=""
-          fill
-          priority={index < 2}
-          sizes="100vw"
-          className="pointer-events-none absolute opacity-0"
-          onLoadingComplete={() => setLoaded((current) => new Set(current).add(slide.id))}
-        />
-      ))}
-      {activeSlide ? (
-        <Image
-          key={activeSlide.id}
-          src={activeSlide.imageUrl}
-          alt=""
-          fill
-          className="hero-active-slide object-cover"
-          style={{ objectPosition: activeSlide.objectPosition }}
-          sizes="100vw"
-          priority
-        />
-      ) : (
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />
-      )}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_42%,transparent_0,rgba(0,0,0,0.12)_36%,rgba(0,0,0,0.72)_100%)]" />
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/15">
-        {activeSlide ? (
+      <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />
+
+      {items.map((slide, index) => {
+        const isActive = index === activeIndex;
+        const isNext = index === nextIndex;
+        if (!isActive && !isNext) return null;
+
+        return (
+          <Image
+            key={slide.id}
+            src={slideSrc(slide)}
+            alt=""
+            fill
+            priority={index === 0}
+            loading={index <= 1 ? 'eager' : 'lazy'}
+            sizes="100vw"
+            className={`object-cover transition-opacity duration-700 ${isActive && loadedIds.has(slide.id) ? 'hero-active-slide opacity-100' : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`}
+            style={{ objectPosition: slide.objectPosition }}
+            onLoad={() => markLoaded(slide.id)}
+          />
+        );
+      })}
+
+      <div className="absolute inset-0 z-[3] bg-[radial-gradient(circle_at_68%_42%,transparent_0,rgba(0,0,0,0.12)_36%,rgba(0,0,0,0.72)_100%)]" />
+      <div className="absolute bottom-0 left-0 right-0 z-[4] h-1 bg-white/15">
+        {firstLoaded ? (
           <div key={progressKey} className="hero-progress h-full bg-[linear-gradient(90deg,rgba(214,181,109,0.15),rgba(214,181,109,0.95),rgba(255,255,255,0.85))]" />
         ) : (
-          <div className="h-full bg-white/70 transition-all duration-300" style={{ width: `${loadingPercent}%` }} />
+          <div className="h-full w-1/3 animate-pulse bg-white/50" />
         )}
       </div>
     </div>

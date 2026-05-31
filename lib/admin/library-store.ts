@@ -462,7 +462,185 @@ function galleryFromRow(row: any): GalleryRecord {
   };
 }
 
-const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status = 'done')`;
+const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status IN ('done', 'done_with_local_original'))`;
+
+function folderFromRow(row: any): FolderRecord {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    description: row.description,
+    parentId: row.parent_id,
+    visibility: row.visibility,
+    sortOrder: row.sort_order,
+    smugmugUri: row.smugmug_uri || undefined,
+    originalUrl: row.original_url || undefined,
+    urlPath: row.url_path || undefined,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+  };
+}
+
+export type PublicBrowseGallery = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  mediaCount: number;
+  coverDisplayUrl: string;
+  coverWidth?: number;
+  coverHeight?: number;
+};
+
+export type PublicBrowseFolder = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  childFolderCount: number;
+  galleryCount: number;
+};
+
+async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<PublicBrowseGallery[]> {
+  if (!galleries.length) return [];
+
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return galleries.map((gallery) => {
+      const images = store.media
+        .filter(
+          (item) =>
+            item.galleryId === gallery.id &&
+            item.visibility !== 'private' &&
+            (!item.migrationStatus || item.migrationStatus === 'done' || item.migrationStatus === 'done_with_local_original'),
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+      const cover = (gallery.coverMediaId ? images.find((item) => item.id === gallery.coverMediaId) : null) || images[0] || null;
+      return {
+        id: gallery.id,
+        title: gallery.title,
+        slug: gallery.slug,
+        description: gallery.description,
+        mediaCount: images.length,
+        coverDisplayUrl: cover?.displayUrl || '',
+        coverWidth: cover?.width,
+        coverHeight: cover?.height,
+      };
+    });
+  }
+
+  await ensureDatabase();
+  const db = getPool();
+  const galleryIds = galleries.map((gallery) => gallery.id);
+  const coverIds = galleries.map((gallery) => gallery.coverMediaId).filter(Boolean);
+
+  const [countsRes, coverRes, firstRes] = await Promise.all([
+    db.query(
+      `SELECT gallery_id, count(*)::int AS total FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} GROUP BY gallery_id`,
+      [galleryIds],
+    ),
+    coverIds.length
+      ? db.query(`SELECT * FROM ${qname('media')} WHERE id = ANY($1::text[])`, [coverIds])
+      : Promise.resolve({ rows: [] }),
+    db.query(
+      `SELECT DISTINCT ON (gallery_id) * FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} ORDER BY gallery_id, sort_order, created_at`,
+      [galleryIds],
+    ),
+  ]);
+
+  const countByGallery = new Map<string, number>(countsRes.rows.map((row) => [row.gallery_id, row.total]));
+  const coverById = new Map<string, MediaRecord>(coverRes.rows.map((row) => [row.id, rowToMediaRecord(row)]));
+  const firstByGallery = new Map<string, MediaRecord>(firstRes.rows.map((row) => [row.gallery_id, rowToMediaRecord(row)]));
+
+  return galleries.map((gallery) => {
+    let cover: MediaRecord | null = null;
+    if (gallery.coverMediaId) {
+      const selected = coverById.get(gallery.coverMediaId);
+      if (selected && selected.galleryId === gallery.id) cover = selected;
+    }
+    if (!cover) cover = firstByGallery.get(gallery.id) || null;
+    return {
+      id: gallery.id,
+      title: gallery.title,
+      slug: gallery.slug,
+      description: gallery.description,
+      mediaCount: countByGallery.get(gallery.id) || 0,
+      coverDisplayUrl: cover?.displayUrl || '',
+      coverWidth: cover?.width,
+      coverHeight: cover?.height,
+    };
+  });
+}
+
+function browseFoldersFromStore(store: LibraryStore, parentFolderId: string): PublicBrowseFolder[] {
+  const folders = store.folders
+    .filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public')
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+  return folders.map((folder) => ({
+    id: folder.id,
+    title: folder.title,
+    slug: folder.slug,
+    description: folder.description,
+    childFolderCount: store.folders.filter((item) => item.parentId === folder.id && item.visibility === 'public').length,
+    galleryCount: store.galleries.filter((item) => item.folderId === folder.id && item.visibility === 'public').length,
+  }));
+}
+
+export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: PublicBrowseFolder[]; galleries: PublicBrowseGallery[] }> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    const galleries = store.galleries
+      .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+    return {
+      folders: browseFoldersFromStore(store, parentFolderId),
+      galleries: await enrichPublicGalleries(galleries),
+    };
+  }
+
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const [foldersRes, galleriesRes, childFolderCounts, galleryCounts] = await Promise.all([
+      db.query(`SELECT * FROM ${qname('folders')} WHERE parent_id = $1 AND visibility = 'public' ORDER BY sort_order, title`, [parentFolderId]),
+      db.query(`SELECT * FROM ${qname('galleries')} WHERE folder_id = $1 AND visibility = 'public' ORDER BY sort_order, title`, [parentFolderId]),
+      db.query(`SELECT parent_id, count(*)::int AS total FROM ${qname('folders')} WHERE visibility = 'public' GROUP BY parent_id`),
+      db.query(`SELECT folder_id, count(*)::int AS total FROM ${qname('galleries')} WHERE visibility = 'public' GROUP BY folder_id`),
+    ]);
+
+    const childCountByFolder = new Map<string, number>(childFolderCounts.rows.map((row) => [row.parent_id, row.total]));
+    const galleryCountByFolder = new Map<string, number>(galleryCounts.rows.map((row) => [row.folder_id, row.total]));
+    const folders = foldersRes.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      childFolderCount: childCountByFolder.get(row.id) || 0,
+      galleryCount: galleryCountByFolder.get(row.id) || 0,
+    }));
+    const galleries = await enrichPublicGalleries(galleriesRes.rows.map(galleryFromRow));
+    return { folders, galleries };
+  } catch {
+    const store = await getLibraryFromJson();
+    const galleries = store.galleries
+      .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+    return {
+      folders: browseFoldersFromStore(store, parentFolderId),
+      galleries: await enrichPublicGalleries(galleries),
+    };
+  }
+}
+
+export async function getPublicFolderBySlug(slug: string): Promise<FolderRecord | null> {
+  const folders = await getFoldersForAdmin();
+  return folders.find((folder) => folder.slug === slug && folder.visibility === 'public') || null;
+}
+
+export async function getPublicGalleryBySlug(slug: string): Promise<GalleryRecord | null> {
+  const galleries = await getGalleriesForAdmin();
+  return galleries.find((gallery) => gallery.slug === slug && gallery.visibility === 'public') || null;
+}
 
 export async function getFolderByUrlPath(urlPath: string): Promise<FolderRecord | null> {
   const folders = await getFoldersForAdmin();
@@ -500,7 +678,7 @@ export async function getPublicMediaForGallery(galleryId: string): Promise<Media
         (item) =>
           item.galleryId === galleryId &&
           item.visibility !== 'private' &&
-          (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+          (item.migrationStatus === 'done' || item.migrationStatus === 'done_with_local_original' || item.migrationStatus === undefined),
       )
       .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
   }
@@ -519,7 +697,7 @@ export async function getPublicMediaForGallery(galleryId: string): Promise<Media
         (item) =>
           item.galleryId === galleryId &&
           item.visibility !== 'private' &&
-          (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+          (item.migrationStatus === 'done' || item.migrationStatus === 'done_with_local_original' || item.migrationStatus === undefined),
       )
       .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
   }
@@ -539,7 +717,7 @@ export async function getPortfolioGallerySummaries(folderId: string): Promise<
           (item) =>
             item.galleryId === gallery.id &&
             item.visibility !== 'private' &&
-            (item.migrationStatus === 'done' || item.migrationStatus === undefined),
+            (item.migrationStatus === 'done' || item.migrationStatus === 'done_with_local_original' || item.migrationStatus === undefined),
         )
         .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
       const cover = gallery.coverMediaId
