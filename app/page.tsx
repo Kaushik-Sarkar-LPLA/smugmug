@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { preload } from 'react-dom';
 import { SiteShell } from '@/components/SiteShell';
-import { HeroSlideshow } from '@/components/home/HeroSlideshow';
+import { HomeHeroSection } from '@/components/home/HomeHeroSection';
 import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
 import { homepageGridSrc, homepageHeroFullSrc, homepageThumbSrc } from '@/lib/homepage-images';
@@ -13,11 +13,11 @@ export default async function Home() {
   const heroSlides = config.items.filter((item) => item.enabled && item.useInHero).sort((a, b) => a.sortOrder - b.sortOrder);
   const gallerySlides = config.items.filter((item) => item.enabled && item.useInGallery).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  for (const slide of heroSlides.slice(0, 2)) {
+  for (const slide of heroSlides.slice(0, 3)) {
     const thumb = homepageThumbSrc(slide);
     const full = homepageHeroFullSrc(slide);
     preload(thumb, { as: 'image', fetchPriority: 'high' });
-    if (full !== thumb) preload(full, { as: 'image' });
+    if (full !== thumb) preload(full, { as: 'image', fetchPriority: 'high' });
   }
 
   for (const slide of gallerySlides.slice(0, 8)) {
@@ -26,27 +26,23 @@ export default async function Home() {
 
   return (
     <SiteShell floatingHeader>
-      <section className="relative min-h-[100svh] overflow-hidden">
-        <HeroSlideshow slides={heroSlides} duration={config.slideDurationSeconds} />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-black/10 to-[#fbfaf7]/92" />
-        <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col items-center justify-start px-5 pb-24 pt-48 sm:pt-52 md:justify-center md:px-8 md:pb-20 md:pt-56 lg:pt-60">
-          <div className="mx-auto w-full max-w-3xl text-center">
-            <p className="mb-5 text-balance text-xs uppercase tracking-[0.28em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)] sm:tracking-[0.38em]">
-              Photography • Video • Live Streaming • Photobooth
-            </p>
-            <h1 className="text-balance text-5xl font-light leading-tight tracking-[0.08em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-7xl">
-              Pixilens Photography
-            </h1>
-            <p className="font-hand mx-auto mt-7 max-w-2xl text-balance text-xl leading-7 text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] md:text-[2rem] md:leading-[1.18]">
-              <span className="typewriter">Austin Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.</span>
-            </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <Link href="/Services-and-Pricing" className="glass-button">Services</Link>
-              <Link href="/Get-Started" className="glass-button">Get Started</Link>
-            </div>
+      <HomeHeroSection slides={heroSlides} duration={config.slideDurationSeconds}>
+        <div className="mx-auto w-full max-w-3xl text-center">
+          <p className="mb-5 text-balance text-xs uppercase tracking-[0.28em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)] sm:tracking-[0.38em]">
+            Photography • Video • Live Streaming • Photobooth
+          </p>
+          <h1 className="text-balance text-5xl font-light leading-tight tracking-[0.08em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] md:text-7xl">
+            Pixilens Photography
+          </h1>
+          <p className="font-hand mx-auto mt-7 max-w-2xl text-balance text-xl leading-7 text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] md:text-[2rem] md:leading-[1.18]">
+            <span className="typewriter">Austin Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.</span>
+          </p>
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <Link href="/Services-and-Pricing" className="glass-button">Services</Link>
+            <Link href="/Get-Started" className="glass-button">Get Started</Link>
           </div>
         </div>
-      </section>
+      </HomeHeroSection>
 
       <section className="mx-auto max-w-7xl px-5 pb-4 pt-10 md:px-8 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4">
