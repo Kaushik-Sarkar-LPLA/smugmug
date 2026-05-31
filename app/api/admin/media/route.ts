@@ -3,6 +3,7 @@ import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
+import { uploadPhotoBufferToImgBB } from '@/lib/admin/imgbb-upload';
 import {
   deleteMediaRecord,
   getMediaById,
@@ -19,19 +20,8 @@ import {
 } from '@/lib/admin/library-store';
 import { adminRedirectUrl } from '@/lib/admin/redirect';
 
-async function uploadPhotoToImgBB(file: File, name: string) {
-  const key = process.env.IMGBB_API_KEY;
-  if (!key) throw new Error('IMGBB_API_KEY is missing');
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const form = new FormData();
-  form.set('key', key);
-  form.set('name', name);
-  form.set('image', buffer.toString('base64'));
-  const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
-  const body = await response.json();
-  if (!response.ok || !body.success) throw new Error(body?.error?.message || 'ImgBB upload failed');
-  return body.data;
-}
+export const runtime = 'nodejs';
+export const maxDuration = 120;
 
 function mediaRedirect(request: NextRequest, form: FormData) {
   const redirectUrl = adminRedirectUrl(request, '/admin/media');
@@ -50,58 +40,66 @@ function uploadErrorRedirect(request: NextRequest, form: FormData, message: stri
 
 export async function POST(request: NextRequest) {
   if (!requireAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const form = await request.formData();
+
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch (error) {
+    console.error('Admin media form parse failed:', error);
+    return NextResponse.json({ error: 'Upload payload could not be read. Try a smaller file.' }, { status: 413 });
+  }
+
   const action = String(form.get('action') || 'upload');
 
-  if (action === 'delete') {
-    const mediaId = String(form.get('id') || '');
-    const media = await getMediaById(mediaId);
-    if (media?.localPath) await fs.rm(media.localPath, { force: true });
-    await deleteMediaRecord(mediaId);
-    revalidatePath('/admin');
-    revalidatePath('/admin/media');
-    revalidatePath('/admin/galleries');
-    const redirectUrl = mediaRedirect(request, form);
-    redirectUrl.searchParams.set('saved', '1');
-    return NextResponse.redirect(redirectUrl, 303);
-  }
-
-  if (action === 'move-up' || action === 'move-down') {
-    const mediaId = String(form.get('id') || '');
-    const moved = await moveMediaInGallery(mediaId, action === 'move-up' ? 'up' : 'down');
-    revalidatePath('/admin/media');
-    revalidatePath('/admin/galleries');
-    const redirectUrl = mediaRedirect(request, form);
-    if (moved) redirectUrl.searchParams.set('saved', '1');
-    return NextResponse.redirect(redirectUrl, 303);
-  }
-
-  if (action === 'set-cover') {
-    const mediaId = String(form.get('id') || '');
-    const galleryId = String(form.get('galleryId') || '');
-    const media = await getMediaById(mediaId);
-    if (galleryId && media?.galleryId === galleryId) {
-      await setGalleryCoverMedia(galleryId, mediaId);
-    }
-    revalidatePath('/admin/media');
-    revalidatePath('/admin/galleries');
-    revalidatePath('/Pixilens-Portfolio');
-    const redirectUrl = mediaRedirect(request, form);
-    redirectUrl.searchParams.set('saved', 'cover');
-    return NextResponse.redirect(redirectUrl, 303);
-  }
-
-  const file = form.get('file');
-  if (!(file instanceof File) || file.size === 0) {
-    return uploadErrorRedirect(request, form, 'file');
-  }
-
-  const galleryId = String(form.get('galleryId') || '');
-  if (!galleryId) {
-    return uploadErrorRedirect(request, form, 'gallery');
-  }
-
   try {
+    if (action === 'delete') {
+      const mediaId = String(form.get('id') || '');
+      const media = await getMediaById(mediaId);
+      if (media?.localPath) await fs.rm(media.localPath, { force: true });
+      await deleteMediaRecord(mediaId);
+      revalidatePath('/admin');
+      revalidatePath('/admin/media');
+      revalidatePath('/admin/galleries');
+      const redirectUrl = mediaRedirect(request, form);
+      redirectUrl.searchParams.set('saved', '1');
+      return NextResponse.redirect(redirectUrl, 303);
+    }
+
+    if (action === 'move-up' || action === 'move-down') {
+      const mediaId = String(form.get('id') || '');
+      const moved = await moveMediaInGallery(mediaId, action === 'move-up' ? 'up' : 'down');
+      revalidatePath('/admin/media');
+      revalidatePath('/admin/galleries');
+      const redirectUrl = mediaRedirect(request, form);
+      if (moved) redirectUrl.searchParams.set('saved', '1');
+      return NextResponse.redirect(redirectUrl, 303);
+    }
+
+    if (action === 'set-cover') {
+      const mediaId = String(form.get('id') || '');
+      const galleryId = String(form.get('galleryId') || '');
+      const media = await getMediaById(mediaId);
+      if (galleryId && media?.galleryId === galleryId) {
+        await setGalleryCoverMedia(galleryId, mediaId);
+      }
+      revalidatePath('/admin/media');
+      revalidatePath('/admin/galleries');
+      revalidatePath('/Pixilens-Portfolio');
+      const redirectUrl = mediaRedirect(request, form);
+      redirectUrl.searchParams.set('saved', 'cover');
+      return NextResponse.redirect(redirectUrl, 303);
+    }
+
+    const file = form.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return uploadErrorRedirect(request, form, 'file');
+    }
+
+    const galleryId = String(form.get('galleryId') || '');
+    if (!galleryId) {
+      return uploadErrorRedirect(request, form, 'gallery');
+    }
+
     const timestamp = now();
     const type = file.type.startsWith('video/') ? 'video' : 'photo';
     const title = String(form.get('title') || file.name);
@@ -114,14 +112,24 @@ export async function POST(request: NextRequest) {
     let record: MediaRecord;
 
     if (type === 'photo') {
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith('image/') && !file.name.match(/\.(jpe?g|png|webp|gif|heic|heif|tiff?)$/i)) {
         return uploadErrorRedirect(request, form, 'type');
       }
-      const uploaded = await uploadPhotoToImgBB(file, `pixilens-admin-${mediaId}-${baseSlug}`);
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const uploaded = await uploadPhotoBufferToImgBB({
+        buffer,
+        uploadName: `pixilens-admin-${mediaId}-${baseSlug}`,
+        galleryId,
+        mediaId,
+        title,
+        fileName: file.name,
+      });
+
       record = {
         id: mediaId,
         galleryId,
-        type,
+        type: 'photo',
         title,
         caption: String(form.get('caption') || ''),
         slug: baseSlug,
@@ -131,12 +139,13 @@ export async function POST(request: NextRequest) {
         publicUrl: uploaded.url,
         displayUrl: uploaded.display_url,
         deleteUrl: uploaded.delete_url,
+        localPath: uploaded.localOriginalPath,
         fileName: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
+        mimeType: file.type || 'image/jpeg',
+        sizeBytes: uploaded.uploadedBytes,
         width: uploaded.width,
         height: uploaded.height,
-        migrationStatus: 'done',
+        migrationStatus: uploaded.migrationStatus,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -149,7 +158,7 @@ export async function POST(request: NextRequest) {
       record = {
         id: mediaId,
         galleryId,
-        type,
+        type: 'video',
         title,
         caption: String(form.get('caption') || ''),
         slug: baseSlug,
@@ -173,13 +182,12 @@ export async function POST(request: NextRequest) {
     revalidatePath('/admin/media');
     revalidatePath('/admin/galleries');
     revalidatePath('/gallery');
-    revalidatePath(`/galleries/${baseSlug}`);
 
     const redirectUrl = mediaRedirect(request, form);
     redirectUrl.searchParams.set('saved', '1');
     return NextResponse.redirect(redirectUrl, 303);
   } catch (error) {
-    console.error('Admin media upload failed:', error);
+    console.error('Admin media action failed:', error);
     const message = error instanceof Error ? error.message : 'upload';
     return uploadErrorRedirect(request, form, message);
   }
