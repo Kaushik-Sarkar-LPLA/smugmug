@@ -1,6 +1,15 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/Pixilens-Portfolio/Lifestyle',
+        destination: '/Pixilens-Portfolio/pixilens-portfolio-lifestyle',
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '64mb',

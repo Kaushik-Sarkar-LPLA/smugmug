@@ -27,6 +27,24 @@ export function portfolioSlug(title: string, slug?: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'gallery';
 }
 
+/** Legacy SmugMug portfolio paths → current gallery slugs. */
+const PORTFOLIO_SLUG_ALIASES: Record<string, string> = {
+  Lifestyle: 'pixilens-portfolio-lifestyle',
+};
+
+const PORTFOLIO_DISPLAY_TITLES: Record<string, string> = {
+  Lifestyle: 'Fashion & Products',
+  'pixilens-portfolio-lifestyle': 'Fashion & Products',
+};
+
+export function normalizePortfolioSlug(slug: string) {
+  return PORTFOLIO_SLUG_ALIASES[slug] || slug;
+}
+
+export function portfolioDisplayTitle(slug: string, title: string) {
+  return PORTFOLIO_DISPLAY_TITLES[slug] || title;
+}
+
 function staticFallback(): PortfolioGallery[] {
   return (portfolioData as StaticCategory[]).map((cat) => {
     const images: MediaRecord[] = [];
@@ -77,7 +95,7 @@ function toPortfolioGallery(
   const cover = summary.cover;
   return {
     id: summary.gallery.id,
-    title: summary.gallery.title,
+    title: portfolioDisplayTitle(slug, summary.gallery.title),
     slug,
     description: summary.gallery.description,
     mediaCount: summary.mediaCount,
@@ -101,13 +119,16 @@ export async function getPortfolioGalleries(): Promise<PortfolioGallery[]> {
 }
 
 export async function findPortfolioGallery(slug: string): Promise<PortfolioGallery | null> {
+  const normalizedSlug = normalizePortfolioSlug(slug);
   try {
     const folder = await getFolderByUrlPath('/Pixilens-Portfolio');
-    if (!folder) return staticFallback().find((gallery) => gallery.slug === slug) || null;
+    if (!folder) {
+      return staticFallback().find((gallery) => gallery.slug === normalizedSlug || gallery.slug === slug) || null;
+    }
 
     const summaries = await getPortfolioGallerySummaries(folder.id);
     const summary = summaries.find(
-      (entry) => portfolioSlug(entry.gallery.title, entry.gallery.slug) === slug,
+      (entry) => portfolioSlug(entry.gallery.title, entry.gallery.slug) === normalizedSlug,
     );
     if (!summary) return null;
 
@@ -115,6 +136,6 @@ export async function findPortfolioGallery(slug: string): Promise<PortfolioGalle
     const cover = summary.cover || images[0] || null;
     return toPortfolioGallery({ ...summary, cover, mediaCount: images.length }, images);
   } catch {
-    return staticFallback().find((gallery) => gallery.slug === slug) || null;
+    return staticFallback().find((gallery) => gallery.slug === normalizedSlug || gallery.slug === slug) || null;
   }
 }

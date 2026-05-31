@@ -17,7 +17,7 @@ export const portfolioLinks = [
   { label: 'FITNESS & LIFESTYLE', href: '/Pixilens-Portfolio/Fitness-Lifestyle' },
   { label: 'NEW BORN & KIDS', href: '/Pixilens-Portfolio/New-Born-kids' },
   { label: 'VIDEOGRAPHY', href: '/Pixilens-Portfolio/Videography' },
-  { label: 'FASHION & PRODUCTS', href: '/Pixilens-Portfolio/Lifestyle' },
+  { label: 'FASHION & PRODUCTS', href: '/Pixilens-Portfolio/pixilens-portfolio-lifestyle' },
   { label: 'ART', href: '/Pixilens-Portfolio/Art' },
   { label: 'MATERNITY', href: '/Pixilens-Portfolio/Maternity' },
 ];
