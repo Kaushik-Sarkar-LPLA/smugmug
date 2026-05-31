@@ -382,6 +382,80 @@ export async function getMediaById(mediaId: string): Promise<MediaRecord | null>
   }
 }
 
+export async function getNextMediaSortOrder(galleryId: string) {
+  if (!galleryId) return 1;
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    const max = store.media
+      .filter((item) => item.galleryId === galleryId)
+      .reduce((current, item) => Math.max(current, item.sortOrder), 0);
+    return max + 1;
+  }
+  await ensureDatabase();
+  const db = getPool();
+  const res = await db.query(
+    `SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM ${qname('media')} WHERE gallery_id = $1`,
+    [galleryId],
+  );
+  return Number(res.rows[0]?.next || 1);
+}
+
+export async function insertMediaRecord(item: MediaRecord) {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    store.media.push(item);
+    await saveLibraryToJson(store);
+    return;
+  }
+  await ensureDatabase();
+  const db = getPool();
+  await db.query(
+    `INSERT INTO ${qname('media')} (
+      id, gallery_id, type, title, caption, slug, visibility, sort_order, provider,
+      public_url, display_url, delete_url, local_path, file_name, mime_type, size_bytes,
+      width, height, migration_status, created_at, updated_at
+    ) VALUES (
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
+    )`,
+    [
+      item.id,
+      item.galleryId,
+      item.type,
+      item.title,
+      item.caption,
+      item.slug,
+      item.visibility,
+      item.sortOrder,
+      item.provider,
+      item.publicUrl,
+      item.displayUrl,
+      item.deleteUrl || null,
+      item.localPath || null,
+      item.fileName,
+      item.mimeType,
+      item.sizeBytes,
+      item.width || null,
+      item.height || null,
+      item.migrationStatus || 'done',
+      item.createdAt,
+      item.updatedAt,
+    ],
+  );
+}
+
+export async function deleteMediaRecord(mediaId: string) {
+  if (!mediaId) return;
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    store.media = store.media.filter((item) => item.id !== mediaId);
+    await saveLibraryToJson(store);
+    return;
+  }
+  await ensureDatabase();
+  const db = getPool();
+  await db.query(`DELETE FROM ${qname('media')} WHERE id = $1`, [mediaId]);
+}
+
 export async function getMediaPage(opts: {
   page: number;
   pageSize: number;

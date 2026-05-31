@@ -4,15 +4,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { requireAdminRequest } from '@/lib/admin/auth';
 import {
-  getLibrary,
+  deleteMediaRecord,
   getMediaById,
+  getNextMediaSortOrder,
   id,
+  insertMediaRecord,
   mediaRoot,
   moveMediaInGallery,
   now,
-  saveLibrary,
   setGalleryCoverMedia,
   slugify,
+  type MediaRecord,
   type Visibility,
 } from '@/lib/admin/library-store';
 import { adminRedirectUrl } from '@/lib/admin/redirect';
@@ -40,19 +42,22 @@ function mediaRedirect(request: NextRequest, form: FormData) {
   return redirectUrl;
 }
 
+function uploadErrorRedirect(request: NextRequest, form: FormData, message: string) {
+  const redirectUrl = mediaRedirect(request, form);
+  redirectUrl.searchParams.set('error', message.slice(0, 180));
+  return NextResponse.redirect(redirectUrl, 303);
+}
+
 export async function POST(request: NextRequest) {
   if (!requireAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const form = await request.formData();
   const action = String(form.get('action') || 'upload');
 
   if (action === 'delete') {
-    const store = await getLibrary();
-    const timestamp = now();
     const mediaId = String(form.get('id') || '');
-    const media = store.media.find((item) => item.id === mediaId);
+    const media = await getMediaById(mediaId);
     if (media?.localPath) await fs.rm(media.localPath, { force: true });
-    store.media = store.media.filter((item) => item.id !== mediaId);
-    await saveLibrary(store);
+    await deleteMediaRecord(mediaId);
     revalidatePath('/admin');
     revalidatePath('/admin/media');
     revalidatePath('/admin/galleries');
@@ -86,81 +91,96 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 303);
   }
 
-  const store = await getLibrary();
-  const timestamp = now();
   const file = form.get('file');
   if (!(file instanceof File) || file.size === 0) {
-    const redirectUrl = mediaRedirect(request, form);
-    redirectUrl.searchParams.set('error', 'file');
-    return NextResponse.redirect(redirectUrl, 303);
+    return uploadErrorRedirect(request, form, 'file');
   }
+
   const galleryId = String(form.get('galleryId') || '');
-  const type = file.type.startsWith('video/') ? 'video' : 'photo';
-  const title = String(form.get('title') || file.name);
-  const mediaId = id('media');
-  const baseSlug = slugify(String(form.get('slug') || title));
-  const sortOrder = Number(form.get('sortOrder') || store.media.length + 1);
-  const visibility = String(form.get('visibility') || 'public') as Visibility;
-
-  if (type === 'photo') {
-    if (!file.type.startsWith('image/')) {
-      const redirectUrl = mediaRedirect(request, form);
-      redirectUrl.searchParams.set('error', 'type');
-      return NextResponse.redirect(redirectUrl, 303);
-    }
-    const uploaded = await uploadPhotoToImgBB(file, `smugmug-admin-${mediaId}-${baseSlug}`);
-    store.media.push({
-      id: mediaId,
-      galleryId,
-      type,
-      title,
-      caption: String(form.get('caption') || ''),
-      slug: baseSlug,
-      visibility,
-      sortOrder,
-      provider: 'imgbb',
-      publicUrl: uploaded.url,
-      displayUrl: uploaded.display_url,
-      deleteUrl: uploaded.delete_url,
-      fileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-      width: uploaded.width,
-      height: uploaded.height,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
-  } else {
-    const extension = path.extname(file.name) || '.mp4';
-    const relative = path.join('videos', `${mediaId}-${baseSlug}${extension}`);
-    const absolute = path.join(mediaRoot(), relative);
-    await fs.mkdir(path.dirname(absolute), { recursive: true });
-    await fs.writeFile(absolute, Buffer.from(await file.arrayBuffer()));
-    store.media.push({
-      id: mediaId,
-      galleryId,
-      type,
-      title,
-      caption: String(form.get('caption') || ''),
-      slug: baseSlug,
-      visibility,
-      sortOrder,
-      provider: 'local',
-      publicUrl: `/api/media/${mediaId}`,
-      displayUrl: `/api/media/${mediaId}`,
-      localPath: absolute,
-      fileName: file.name,
-      mimeType: file.type || 'video/mp4',
-      sizeBytes: file.size,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
+  if (!galleryId) {
+    return uploadErrorRedirect(request, form, 'gallery');
   }
 
-  await saveLibrary(store);
-  revalidatePath('/admin');
-  revalidatePath('/admin/media');
-  const redirectUrl = mediaRedirect(request, form);
-  redirectUrl.searchParams.set('saved', '1');
-  return NextResponse.redirect(redirectUrl, 303);
+  try {
+    const timestamp = now();
+    const type = file.type.startsWith('video/') ? 'video' : 'photo';
+    const title = String(form.get('title') || file.name);
+    const mediaId = id('media');
+    const baseSlug = slugify(String(form.get('slug') || title));
+    const sortOrderInput = Number(form.get('sortOrder') || 0);
+    const sortOrder = sortOrderInput > 0 ? sortOrderInput : await getNextMediaSortOrder(galleryId);
+    const visibility = String(form.get('visibility') || 'public') as Visibility;
+
+    let record: MediaRecord;
+
+    if (type === 'photo') {
+      if (!file.type.startsWith('image/')) {
+        return uploadErrorRedirect(request, form, 'type');
+      }
+      const uploaded = await uploadPhotoToImgBB(file, `pixilens-admin-${mediaId}-${baseSlug}`);
+      record = {
+        id: mediaId,
+        galleryId,
+        type,
+        title,
+        caption: String(form.get('caption') || ''),
+        slug: baseSlug,
+        visibility,
+        sortOrder,
+        provider: 'imgbb',
+        publicUrl: uploaded.url,
+        displayUrl: uploaded.display_url,
+        deleteUrl: uploaded.delete_url,
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        width: uploaded.width,
+        height: uploaded.height,
+        migrationStatus: 'done',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+    } else {
+      const extension = path.extname(file.name) || '.mp4';
+      const relative = path.join('videos', `${mediaId}-${baseSlug}${extension}`);
+      const absolute = path.join(mediaRoot(), relative);
+      await fs.mkdir(path.dirname(absolute), { recursive: true });
+      await fs.writeFile(absolute, Buffer.from(await file.arrayBuffer()));
+      record = {
+        id: mediaId,
+        galleryId,
+        type,
+        title,
+        caption: String(form.get('caption') || ''),
+        slug: baseSlug,
+        visibility,
+        sortOrder,
+        provider: 'local',
+        publicUrl: `/api/media/${mediaId}`,
+        displayUrl: `/api/media/${mediaId}`,
+        localPath: absolute,
+        fileName: file.name,
+        mimeType: file.type || 'video/mp4',
+        sizeBytes: file.size,
+        migrationStatus: 'done',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+    }
+
+    await insertMediaRecord(record);
+    revalidatePath('/admin');
+    revalidatePath('/admin/media');
+    revalidatePath('/admin/galleries');
+    revalidatePath('/gallery');
+    revalidatePath(`/galleries/${baseSlug}`);
+
+    const redirectUrl = mediaRedirect(request, form);
+    redirectUrl.searchParams.set('saved', '1');
+    return NextResponse.redirect(redirectUrl, 303);
+  } catch (error) {
+    console.error('Admin media upload failed:', error);
+    const message = error instanceof Error ? error.message : 'upload';
+    return uploadErrorRedirect(request, form, message);
+  }
 }
