@@ -37,6 +37,8 @@ const includeAlreadyDone = args.includeAlreadyDone === 'true';
 const dryRun = args.dryRun === 'true';
 const retryErrors = args.retryErrors === 'true';
 const errorsOnly = args.errorsOnly === 'true';
+const resume = args.resume === 'true';
+const startAlbumIndexArg = args.startAlbumIndex !== undefined ? Number(args.startAlbumIndex) : null;
 const IMGBB_MAX_BYTES = Number(args.maxUploadBytes || process.env.IMGBB_MAX_BYTES || 31_500_000);
 const jpegQuality = Number(args.jpegQuality || process.env.MIGRATE_JPEG_QUALITY || 85);
 const maxDimension = Number(args.maxDimension || process.env.MIGRATE_MAX_DIMENSION || 3000);
@@ -353,10 +355,21 @@ async function retryErrorsOnly() {
   await pool.end();
 }
 
+async function loadResumeStartIndex() {
+  const state = await pool.query(`SELECT value FROM ${qname('migration_state')} WHERE key='smugmug'`);
+  const value = state.rows[0]?.value || {};
+  const completed = Number(value.completedAlbumIndex || 0);
+  // completedAlbumIndex is the number of fully finished albums; next album index to run is the same value.
+  if (Number.isFinite(startAlbumIndexArg) && startAlbumIndexArg >= 0) return startAlbumIndexArg;
+  if (resume && completed > 0) return completed;
+  return 0;
+}
+
 async function main() {
   if (args.progress === 'true') return progress();
   if (errorsOnly || (retryErrors && args.mode === 'errors-only')) return retryErrorsOnly();
   await ensure();
+  const startAlbumIndex = await loadResumeStartIndex();
   const albums = await collect('/api/v2/user/pixilens!albums', 'Album');
   const eligibleAlbums = albums.filter((album) => {
     const pathname = album.WebUri ? new URL(album.WebUri).pathname : '';
@@ -366,9 +379,9 @@ async function main() {
     const pathname = album.WebUri ? new URL(album.WebUri).pathname : '';
     return (!onlyAlbumKey || album.Uri.endsWith(`/${onlyAlbumKey}`)) && (!onlyPathPrefix || pathname.startsWith(onlyPathPrefix));
   }).slice(0, limitAlbums || undefined);
-  await saveState({ totalAlbums: albums.length, skippedAlbums: albums.length - eligibleAlbums.length, selectedAlbums: selected.length, skipPathPatterns, pathPrefix: onlyPathPrefix || undefined, mode: onlyAlbumKey ? 'single' : (onlyPathPrefix ? 'path-prefix' : 'all') });
+  await saveState({ totalAlbums: albums.length, skippedAlbums: albums.length - eligibleAlbums.length, selectedAlbums: selected.length, skipPathPatterns, pathPrefix: onlyPathPrefix || undefined, mode: onlyAlbumKey ? 'single' : (onlyPathPrefix ? 'path-prefix' : resume ? 'resume' : 'all'), startAlbumIndex, status: 'running', startedAt: new Date().toISOString() });
   let mediaDone = 0, mediaErrors = 0;
-  for (let ai = 0; ai < selected.length; ai++) {
+  for (let ai = startAlbumIndex; ai < selected.length; ai++) {
     const album = selected[ai];
     const folderId = await upsertFolderFromWebPath(album.WebUri);
     const galleryPath = new URL(album.WebUri).pathname;
