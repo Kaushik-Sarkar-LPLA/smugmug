@@ -1,7 +1,6 @@
 export const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Portfolio', href: '/Pixilens-Portfolio' },
-  { label: 'Gallery', href: '/gallery' },
   { label: 'Services', href: '/Services-and-Pricing' },
   { label: 'Contact us', href: '/Direct-Message' },
   { label: 'About', href: '/About-Us' },

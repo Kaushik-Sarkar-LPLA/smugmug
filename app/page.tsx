@@ -36,11 +36,12 @@ export default async function Home() {
           {gallerySlides.map((slide, index) => (
             <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
               <ImageWithLoader
-                src={slide.displayUrl}
+                src={slide.imageUrl || slide.displayUrl}
                 alt={slide.alt || `Pixilens gallery image ${index + 1}`}
                 width={slide.width || 1200}
                 height={slide.height || 800}
                 className="h-auto w-full object-cover opacity-95 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                quality={85}
                 sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                 loading={index < 6 ? 'eager' : 'lazy'}
               />

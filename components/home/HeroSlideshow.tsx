@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
 
 function slideSrc(slide: HomepageItem) {
-  return slide.displayUrl || slide.imageUrl;
+  return slide.imageUrl || slide.displayUrl;
 }
 
 export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; duration: number }) {
@@ -71,6 +71,7 @@ export function HeroSlideshow({ slides, duration }: { slides: HomepageItem[]; du
             priority={index === 0}
             loading={index <= 1 ? 'eager' : 'lazy'}
             sizes="100vw"
+            quality={90}
             className={`object-cover transition-opacity duration-700 ${isActive && loadedIds.has(slide.id) ? 'hero-active-slide opacity-100' : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`}
             style={{ objectPosition: slide.objectPosition }}
             onLoad={() => markLoaded(slide.id)}

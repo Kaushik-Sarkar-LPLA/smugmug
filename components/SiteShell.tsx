@@ -56,7 +56,7 @@ export function PageHero({ eyebrow, title, children }: { eyebrow: string; title:
   return (
     <section className="mx-auto max-w-5xl px-5 py-16 text-center md:px-8 md:py-24">
       <p className="text-xs uppercase tracking-[0.4em] text-[#17130f]/45">{eyebrow}</p>
-      <h1 className="gold-text mt-4 text-4xl font-light tracking-[0.12em] md:text-6xl">{title}</h1>
+      <h1 className="gold-text mt-4 break-words text-4xl font-light leading-tight tracking-[0.12em] md:text-6xl">{title}</h1>
       {children ? <div className="mx-auto mt-8 max-w-3xl text-base leading-8 text-[#17130f]/65 md:text-lg">{children}</div> : null}
     </section>
   );

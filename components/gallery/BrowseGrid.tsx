@@ -22,10 +22,20 @@ export function BrowseGrid({
       {folders.map((folder) => (
         <Link key={folder.id} href={`/folders/${folder.slug}`} className="glass-panel group overflow-hidden rounded-xl">
           <div className="relative aspect-[4/3] bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(214,181,109,0.18))]">
+            {folder.coverUrl ? (
+              <ImageWithLoader
+                src={folder.coverUrl}
+                alt={folder.title}
+                fill
+                quality={85}
+                className="object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
+                sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 100vw"
+              />
+            ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-            <div className="absolute bottom-0 p-6">
+            <div className="absolute inset-x-0 bottom-0 p-6">
               <p className="text-xs uppercase tracking-[0.32em] text-white/55">Folder</p>
-              <h2 className="font-art mt-2 text-2xl tracking-[0.08em] text-white">{folder.title}</h2>
+              <h2 className="font-art mt-2 break-words text-2xl leading-tight tracking-[0.08em] text-white">{folder.title}</h2>
               <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-white/50">
                 {folder.childFolderCount} folders · {folder.galleryCount} galleries
               </p>
@@ -37,19 +47,20 @@ export function BrowseGrid({
       {galleries.map((gallery) => (
         <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
           <div className="relative aspect-[3/4] bg-white/60">
-            {gallery.coverDisplayUrl ? (
+            {gallery.coverUrl ? (
               <ImageWithLoader
-                src={gallery.coverDisplayUrl}
+                src={gallery.coverUrl}
                 alt={gallery.title}
                 fill
+                quality={85}
                 className="object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
                 sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 100vw"
               />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
-            <div className="absolute bottom-0 p-6">
+            <div className="absolute inset-x-0 bottom-0 p-6">
               <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>
-              <h2 className="font-art mt-2 text-xl tracking-[0.08em] text-white">{gallery.title}</h2>
+              <h2 className="font-art mt-2 break-words text-xl leading-tight tracking-[0.08em] text-white">{gallery.title}</h2>
             </div>
           </div>
         </Link>

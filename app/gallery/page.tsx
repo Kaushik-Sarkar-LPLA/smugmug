@@ -15,7 +15,7 @@ export default async function GalleryIndexPage() {
   return (
     <SiteShell>
       <PageHero eyebrow="Library" title="Gallery">
-        <p>Browse all public folders and galleries migrated from SmugMug.</p>
+        <p>Browse folders and galleries from the Pixilens photo library.</p>
       </PageHero>
       <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-20 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:px-8">
         <BrowseGrid folders={folders} galleries={galleries} />

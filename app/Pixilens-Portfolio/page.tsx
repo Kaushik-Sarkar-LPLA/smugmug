@@ -27,7 +27,7 @@ export default async function PortfolioPage() {
           ))
         ) : (
           <div className="col-span-full glass-panel mx-auto max-w-3xl rounded-xl p-8 text-center text-[#17130f]/65">
-            Portfolio galleries are still being migrated. Check back soon.
+            Portfolio galleries are coming soon. Check back shortly.
           </div>
         )}
       </section>
@@ -50,7 +50,7 @@ function PortfolioCard({ gallery }: { gallery: Awaited<ReturnType<typeof getPort
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
         <div className="absolute bottom-0 p-5">
           <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>
-          <h2 className="font-art mt-2 text-xl tracking-[0.08em] text-white">{gallery.title}</h2>
+          <h2 className="font-art mt-2 break-words text-xl leading-tight tracking-[0.08em] text-white">{gallery.title}</h2>
         </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/35">

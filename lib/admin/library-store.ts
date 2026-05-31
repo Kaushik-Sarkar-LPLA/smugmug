@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { ensureDatabase, getPool, hasDatabase, qname } from '@/lib/admin/db';
+import { mediaImageUrl } from '@/lib/media-url';
 
 export type Visibility = 'public' | 'private' | 'draft';
 
@@ -487,7 +488,7 @@ export type PublicBrowseGallery = {
   slug: string;
   description: string;
   mediaCount: number;
-  coverDisplayUrl: string;
+  coverUrl: string;
   coverWidth?: number;
   coverHeight?: number;
 };
@@ -499,7 +500,75 @@ export type PublicBrowseFolder = {
   description: string;
   childFolderCount: number;
   galleryCount: number;
+  coverUrl: string;
 };
+
+function folderCoverFromStore(store: LibraryStore, folderId: string) {
+  const galleries = store.galleries
+    .filter((gallery) => gallery.folderId === folderId && gallery.visibility === 'public')
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+
+  for (const gallery of galleries) {
+    const images = store.media
+      .filter(
+        (item) =>
+          item.galleryId === gallery.id &&
+          item.visibility !== 'private' &&
+          (!item.migrationStatus || item.migrationStatus === 'done' || item.migrationStatus === 'done_with_local_original'),
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+    const cover = (gallery.coverMediaId ? images.find((item) => item.id === gallery.coverMediaId) : null) || images[0] || null;
+    const url = mediaImageUrl(cover);
+    if (url) return url;
+  }
+
+  return '';
+}
+
+async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, string>> {
+  const covers = new Map<string, string>();
+  if (!folderIds.length) return covers;
+
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    for (const folderId of folderIds) {
+      const url = folderCoverFromStore(store, folderId);
+      if (url) covers.set(folderId, url);
+    }
+    return covers;
+  }
+
+  await ensureDatabase();
+  const db = getPool();
+  const res = await db.query(
+    `SELECT DISTINCT ON (g.folder_id)
+      g.folder_id,
+      COALESCE(NULLIF(m.public_url, ''), NULLIF(m.display_url, '')) AS cover_url
+    FROM ${qname('galleries')} g
+    JOIN LATERAL (
+      SELECT public_url, display_url
+      FROM ${qname('media')} m2
+      WHERE m2.gallery_id = g.id
+        AND m2.visibility != 'private'
+        AND (m2.migration_status IS NULL OR m2.migration_status IN ('done', 'done_with_local_original'))
+        AND COALESCE(NULLIF(m2.public_url, ''), NULLIF(m2.display_url, '')) <> ''
+      ORDER BY
+        CASE WHEN m2.id = g.cover_media_id THEN 0 ELSE 1 END,
+        m2.sort_order,
+        m2.created_at
+      LIMIT 1
+    ) m ON true
+    WHERE g.folder_id = ANY($1::text[]) AND g.visibility = 'public'
+    ORDER BY g.folder_id, g.sort_order, g.title`,
+    [folderIds],
+  );
+
+  for (const row of res.rows) {
+    if (row.cover_url) covers.set(row.folder_id, row.cover_url);
+  }
+
+  return covers;
+}
 
 async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<PublicBrowseGallery[]> {
   if (!galleries.length) return [];
@@ -522,7 +591,7 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
         slug: gallery.slug,
         description: gallery.description,
         mediaCount: images.length,
-        coverDisplayUrl: cover?.displayUrl || '',
+        coverUrl: mediaImageUrl(cover),
         coverWidth: cover?.width,
         coverHeight: cover?.height,
       };
@@ -565,14 +634,14 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
       slug: gallery.slug,
       description: gallery.description,
       mediaCount: countByGallery.get(gallery.id) || 0,
-      coverDisplayUrl: cover?.displayUrl || '',
+      coverUrl: mediaImageUrl(cover),
       coverWidth: cover?.width,
       coverHeight: cover?.height,
     };
   });
 }
 
-function browseFoldersFromStore(store: LibraryStore, parentFolderId: string): PublicBrowseFolder[] {
+function browseFoldersFromStore(store: LibraryStore, parentFolderId: string, coverByFolderId?: Map<string, string>): PublicBrowseFolder[] {
   const folders = store.folders
     .filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public')
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
@@ -583,6 +652,7 @@ function browseFoldersFromStore(store: LibraryStore, parentFolderId: string): Pu
     description: folder.description,
     childFolderCount: store.folders.filter((item) => item.parentId === folder.id && item.visibility === 'public').length,
     galleryCount: store.galleries.filter((item) => item.folderId === folder.id && item.visibility === 'public').length,
+    coverUrl: coverByFolderId?.get(folder.id) || folderCoverFromStore(store, folder.id),
   }));
 }
 
@@ -592,8 +662,11 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     const galleries = store.galleries
       .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
       .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+    const folderCovers = await enrichFolderCovers(
+      store.folders.filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public').map((folder) => folder.id),
+    );
     return {
-      folders: browseFoldersFromStore(store, parentFolderId),
+      folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
       galleries: await enrichPublicGalleries(galleries),
     };
   }
@@ -610,6 +683,8 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
 
     const childCountByFolder = new Map<string, number>(childFolderCounts.rows.map((row) => [row.parent_id, row.total]));
     const galleryCountByFolder = new Map<string, number>(galleryCounts.rows.map((row) => [row.folder_id, row.total]));
+    const folderIds = foldersRes.rows.map((row) => row.id);
+    const folderCovers = await enrichFolderCovers(folderIds);
     const folders = foldersRes.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -617,6 +692,7 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
       description: row.description,
       childFolderCount: childCountByFolder.get(row.id) || 0,
       galleryCount: galleryCountByFolder.get(row.id) || 0,
+      coverUrl: folderCovers.get(row.id) || '',
     }));
     const galleries = await enrichPublicGalleries(galleriesRes.rows.map(galleryFromRow));
     return { folders, galleries };
@@ -625,8 +701,11 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     const galleries = store.galleries
       .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
       .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+    const folderCovers = await enrichFolderCovers(
+      store.folders.filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public').map((folder) => folder.id),
+    );
     return {
-      folders: browseFoldersFromStore(store, parentFolderId),
+      folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
       galleries: await enrichPublicGalleries(galleries),
     };
   }
