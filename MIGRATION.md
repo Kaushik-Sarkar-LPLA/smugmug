@@ -1,5 +1,7 @@
 # SmugMug to self-hosted Pixilens migration plan
 
+> **Current status:** Read [`STATUS.md`](./STATUS.md) first — it has live migration progress, resume commands, audit results, and deployment state. This file is the long-term plan; `STATUS.md` is updated each session.
+
 ## Context
 
 The goal is to move the existing photography and video portfolio currently served through SmugMug at `pixilens.com` into a self-hosted website that preserves the current content, hierarchy, URL patterns, visual look, and public browsing experience, while removing SmugMug commerce/buy-now functionality.

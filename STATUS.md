@@ -1,94 +1,228 @@
 # SmugMug Migration — Status
 
+**Last updated:** 2026-05-31 (UTC)  
+**Repo:** `/Users/kauushiksarkar/MacGithub/smugmug` → `https://github.com/pixilensphoto-tech/smugmug`  
+**Server:** `ssh priyanka`  
+**Migrator path:** `/home/priyanka/pixilens-smugmug-migrator`  
+**Admin data:** `/home/priyanka/pixilens-smugmug-admin/data` (~17 GB photo originals + videos)
+
+---
+
+## Pick up here (next session)
+
+### 1. Check if migration worker is running
+
+```bash
+ssh priyanka "pgrep -af 'node scripts/smugmug-migrate-worker'"
+ssh priyanka "cd /home/priyanka/pixilens-smugmug-migrator && npm run migrate:smugmug -- --progress=true"
+```
+
+### 2. If stopped, resume from last completed album
+
+```bash
+ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && nohup npm run migrate:smugmug -- --resume=true --delayMs=2500 --smugDelayMs=750 >> migration.log 2>&1 &'
+```
+
+`--resume=true` reads `completedAlbumIndex` from Postgres and skips finished albums.
+
+### 3. When migration finishes, run full audit
+
+```bash
+ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && node scripts/compare-smugmug-migration.js > compare-report.json 2>compare.log; echo EXIT:$?'
+```
+
+Exits **0** only if SmugMug eligible content matches DB (skipped `/Automatic-iOS-Uploads` excluded).
+
+### 4. Deploy app after migration milestones
+
+See [Deployment Flow](#deployment-flow) below. Always deploy both priyanka + Azure Coolify apps.
+
+---
+
+## Live migration state (2026-05-31 ~18:23 UTC)
+
+| Item | Value |
+|------|-------|
+| **Worker** | **Running** — PID 2173200, mode `--resume=true` |
+| **Albums completed** | **575 / 636** eligible |
+| **Current album** | [Joci2018Jan](https://www.pixilens.com/Joci2018Jan) (album index 576) |
+| **Photos imported this run** | 270 (and counting) |
+| **Run errors this session** | 0 |
+
+### Database totals
+
+| Metric | Count |
+|--------|------:|
+| **Galleries** | 578 |
+| **Folders** | 83 |
+| **Media done** | 82,367 |
+| **Media done (compressed + local original)** | 478 |
+| **Media errors** | 2 |
+| **Total in DB** | 82,847 |
+
+### SmugMug scope (eligible, not skipped)
+
+| Metric | Count |
+|--------|------:|
+| **Total SmugMug albums** | 2,702 |
+| **Skipped albums** | 2,066 (`/Automatic-iOS-Uploads`) |
+| **Eligible albums** | 636 |
+| **Eligible photos on SmugMug** | ~103,236 |
+| **Still to migrate (approx)** | ~20,400 photos across ~60 albums |
+
+---
+
+## What happened (timeline)
+
+1. **Main migration** ran through album **573/636** then crashed (`ENETUNREACH` DB blip).
+2. **Errors-only retry** (`--errorsOnly=true`) fixed **479/481** failed photos using sharp compression before ImgBB upload. **2** remain (SmugMug temp-file errors).
+3. **Audit** (`npm run compare:smugmug`) found **62 entire galleries** never imported (mostly 2016–2018 content at end of SmugMug API album order) + **55 partial** photos in Ennoir-RM67-FS-2018.
+4. **Resume run started** 2026-05-31 ~17:50 UTC with `--resume=true` from album index 573:
+   - Finished **Ennoir-RM67-FS-2018** (55 photos)
+   - Finished **Caroline** (81 photos)
+   - In progress: **Joci2018Jan** and remaining ~60 galleries
+
+Full list of originally missing 62 galleries: `compare-audit-report.json` in repo root.
+
+---
+
+## Remaining known errors (2 photos)
+
+SmugMug server-side temp file failure — not size-related. Retry unlikely unless SmugMug source is fixed.
+
+| Gallery | Image URL |
+|---------|-----------|
+| [samantha-2seelife-Aug-2020](https://www.pixilens.com/2Seelife/n-GnTWCB/OldPhotos/Samantha-2seelife-Aug-2020) | https://www.pixilens.com/2Seelife/n-GnTWCB/OldPhotos/Samantha-2seelife-Aug-2020/i-fLZfjRT |
+| [1](https://www.pixilens.com/2Seelife/n-GnTWCB/2seelife-Aug-2020/1) | https://www.pixilens.com/2Seelife/n-GnTWCB/2seelife-Aug-2020/1/i-JtCBtvM |
+
+---
+
+## Migration scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run migrate:smugmug -- --progress=true` | Show DB counts + worker state |
+| `npm run migrate:smugmug -- --resume=true --delayMs=2500 --smugDelayMs=750` | Resume from `completedAlbumIndex` |
+| `npm run migrate:smugmug -- --errorsOnly=true` | Retry only `migration_status=error` rows |
+| `npm run compare:smugmug` | Full SmugMug vs DB audit (exit 1 if gaps) |
+
+Worker flags: `--startAlbumIndex=N`, `--retryErrors=true`, `--pathPrefix=/Foo`, `--limitAlbums=N`
+
+### Compression (since commit `5e6fc31`)
+
+Oversized originals (>32 MB) are resized with **sharp** (3000px max, quality 85) before ImgBB upload. Full originals archived to `photo-originals/` on priyanka (~17 GB).
+
+---
+
 ## Deployments
 
-| Site | URL | Status | Portfolio |
-|---|---|---|---|
-| Priyanka (local) | `smugmug.pixilens.online` | ✅ Container running | 12 galleries from DB (ImgBB CDN) |
-| Azure | `smugmug-az.pixilens.online` | ✅ Container running | Static fallback (SmugMug URLs) |
+| Site | URL | Coolify app | Status |
+|------|-----|-------------|--------|
+| Priyanka | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | Running |
+| Azure | https://smugmug-az.pixilens.online | `l08cogcggk4oksg0kwwos44k` | Running |
 
-## Migration Progress
+Admin (both sites, login required):
 
-- Albums: 97 / 636 completed (2,702 total, 2,066 skipped)
-- Media done in DB: 22,143
-- Media errors: 1,188
-- Migration worker running in background (PID 1065159 on priyanka)
+- https://smugmug-az.pixilens.online/admin/galleries
+- https://smugmug-az.pixilens.online/admin/media
 
-## Portfolio UI (Implemented)
+### Recent app features (deployed)
 
-- **Main page**: 12 portrait `aspect-[3/4]` gallery cards with "View Gallery" hover button
-- **Gallery detail**: `grid-cols-2/3/4/5` portrait thumbnails with "View image" hover
-- **Lightbox**: Full-screen overlay with prev/next navigation, keyboard support (Esc, arrows), image counter
+- Admin galleries paginated table (573+ galleries)
+- Portrait thumbnails, reorder (↑/↓), set cover image
+- Portfolio uses DB cover + sort order
+- Booking/photobooth forms attach `.ics` calendar invites
+- Booking form has Event Time field
 
-## Azure DB Connection Issue
+Latest app commits at last doc update: `f6921fd` (worker resume), `b57661c` (booking form).
 
-Azure PostgreSQL (`150.220.93.109:6767`) requires SSL client certs. The `grabber_user` account uses `cert` authentication.
+---
 
-### Current state
-- `DATABASE_URL`, `DATABASE_SCHEMA`, `SSL_MODE` env vars set on Coolify app
-- `SSL_CA`, `SSL_CERT`, `SSL_KEY` (base64) env vars set on Coolify app
-- SSL certs present in `db.ts` code (reads from env vars or `SSL_CERTS_DIR`)
-- **Still failing**: Azure container may not be receiving the env vars, or the base64 values may be too long for Coolify env vars
+## Azure DB connection
 
-### Grabber-Azure-Primary
-- Connects to the same DB successfully with `POSTGRES_SSLMODE=require`
-- How it gets the certs is unclear (no `SSL_CERTS_DIR` visible in its env)
+Azure PostgreSQL (`150.220.93.109:6767`) requires SSL client certs for `grabber_user`.
 
-## Deployment Flow
+- Certs mounted at `/home/priyanka/pixilens-smugmug-admin/certs` → container `/app/certs`
+- Env: `SSL_CERTS_DIR=/app/certs`, `POSTGRES_SSLMODE=require`
+- Azure Coolify app has base64 `SSL_CA`, `SSL_CERT`, `SSL_KEY` env vars — verify if Azure portfolio still falls back to static JSON
+
+---
+
+## Deployment flow
 
 Always deploy both simultaneously:
+
 ```bash
-# Priyanka
+# Pull latest on priyanka migrator + rebuild priyanka container
 ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && sudo docker build -t pixilens-smugmug:latest . && sudo docker rm -f smugmug-managed && sudo docker run -d --name smugmug-managed --restart unless-stopped --network coolify -p 3010:3000 --env-file /home/priyanka/pixilens-smugmug-admin/.env -e MEDIA_ROOT=/admin-data/media -e ADMIN_DATA_DIR=/admin-data -v /home/priyanka/pixilens-smugmug-admin/data:/admin-data -v /home/priyanka/pixilens-smugmug-admin/certs:/app/certs --label traefik.enable=true --label traefik.http.middlewares.gzip.compress=true --label traefik.http.routers.http-0-smugmug-managed.entryPoints=http --label traefik.http.routers.http-0-smugmug-managed.middlewares=gzip --label traefik.http.routers.http-0-smugmug-managed.rule="Host(\`smugmug.pixilens.online\`) && PathPrefix(\`/\`)" --label traefik.http.routers.http-0-smugmug-managed.service=http-0-smugmug-managed --label traefik.http.services.http-0-smugmug-managed.loadbalancer.server.port=3000 pixilens-smugmug:latest'
 
-# Azure
+# Azure Coolify
 ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start l08cogcggk4oksg0kwwos44k --force --instant-deploy'
 ```
 
-## File Structure
+Coolify apps:
+
+| App | UUID |
+|-----|------|
+| `pixilens-smugmug-azure` | `l08cogcggk4oksg0kwwos44k` |
+| `pixilens-smugmug` (local) | `a4gcggkck44cokoc08os84sw` |
+
+---
+
+## Monitor migration
+
+```bash
+# Worker process
+ssh priyanka "pgrep -af smugmug-migrate-worker"
+
+# Progress JSON
+ssh priyanka "cd /home/priyanka/pixilens-smugmug-migrator && npm run migrate:smugmug -- --progress=true"
+
+# Log tail
+ssh priyanka "tail -f /home/priyanka/pixilens-smugmug-migrator/migration.log"
+
+# Failed items CSV (from last errors-only run)
+ssh priyanka "wc -l /home/priyanka/pixilens-smugmug-admin/failed-migration-report.csv"
+```
+
+---
+
+## File structure
 
 ```
 smugmug/
-├── app/
-│   ├── Pixilens-Portfolio/
-│   │   ├── page.tsx              → Main portfolio page (12 gallery cards)
-│   │   └── [slug]/page.tsx       → Gallery detail with GalleryGrid
-│   ├── portfolio-data.json       → Static fallback (SmugMug URLs)
-│   └── api/
-│       └── debug-env/route.ts    → Debug endpoint for env vars
-├── components/
-│   ├── GalleryGrid.tsx           → Client component: grid + hover + lightbox
-│   └── GalleryLightbox.tsx       → Client component: full-screen viewer
-├── lib/
-│   ├── portfolio-db.ts           → Queries DB, falls back to static JSON
-│   ├── admin/
-│   │   ├── db.ts                 → SSL config, pool, schema helpers
-│   │   └── library-store.ts      → getLibrary() fetches folders/galleries/media
-│   └── portfolio.ts              → Old static portfolio helper
+├── STATUS.md                         ← THIS FILE — current state, read first
+├── MIGRATION.md                      ← Full migration plan
+├── compare-audit-report.json         ← Last audit (62 missing galleries snapshot)
 ├── scripts/
-│   ├── smugmug-migrate-worker.js → Main migration worker
-│   ├── imgbb-cli.js
-│   ├── migrate-json-to-postgres.js
-│   └── migrate-priority-imgbb.js
-└── MIGRATION.md                  → Full migration plan (631 lines)
+│   ├── smugmug-migrate-worker.js   ← Main worker (resume, errorsOnly, compression)
+│   └── compare-smugmug-migration.js← SmugMug vs DB audit
+├── app/
+│   ├── Pixilens-Portfolio/           ← Public portfolio (DB-backed)
+│   ├── admin/galleries|media|...     ← Admin UI
+│   └── Booking-Form/                 ← Calendar invite on submit
+├── lib/admin/                        ← DB, library-store
+└── components/GalleryGrid.tsx        ← Lightbox + portrait grid
 ```
 
-## Key Env Vars (priyanka container)
+---
+
+## Key env vars (priyanka)
 
 ```
 DATABASE_URL=postgresql://grabber_user:***@150.220.93.109:6767/grabber_db
 DATABASE_SCHEMA=pixilens_smugmug
-SSL_CERTS_DIR=/app/certs
+SSL_CERTS_DIR=/home/priyanka/pixilens-smugmug-admin/certs
 POSTGRES_SSLMODE=require
+IMGBB_API_KEY=...
+SMUGMUG_API_KEY / SMUGMUG_API_SECRET / SMUGMUG_ACCESS_TOKEN / SMUGMUG_ACCESS_TOKEN_SECRET
+SMUGMUG_SKIP_PATHS=/Automatic-iOS-Uploads
+ADMIN_DATA_DIR=/home/priyanka/pixilens-smugmug-admin/data
+MEDIA_ROOT=/home/priyanka/pixilens-smugmug-admin/data/media
 ```
 
-## Key Env Vars (Azure Coolify app)
+---
 
-```
-DATABASE_URL=postgresql://grabber_user:***@150.220.93.109:6767/grabber_db?sslmode=require
-DATABASE_SCHEMA=pixilens_smugmug
-SSL_MODE=require
-SSL_CA=<base64 ca.crt>
-SSL_CERT=<base64 client_grabber_user.crt>
-SSL_KEY=<base64 client_grabber_user.key>
-```
+## Skip policy
+
+Only `/Automatic-iOS-Uploads` is excluded (2,066 albums, ~32,157 photos). Everything else under the 636 eligible albums should migrate.
