@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveLegacySmugmugPath } from '@/lib/smugmug-redirect';
+import { siteUrl } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,13 @@ function publicOrigin(request: NextRequest) {
     .split(',')[0]
     .trim();
   const hostname = host.split(':')[0];
-  const forwarded = request.headers.get('x-forwarded-proto');
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+  if (isLocal) {
+    return siteUrl();
+  }
+  const forwarded = request.headers.get('x-forwarded-proto');
   const isPixilensDomain = hostname === 'pixilens.com' || hostname.endsWith('.pixilens.com') || hostname.endsWith('.pixilens.online');
-  const proto = isPixilensDomain ? 'https' : forwarded || (isLocal ? 'http' : 'https');
+  const proto = isPixilensDomain ? 'https' : forwarded || 'https';
   return `${proto}://${hostname}`;
 }
 
