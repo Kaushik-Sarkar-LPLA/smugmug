@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PublicNav } from '@/components/nav/PublicNav';
 import { findSiteAsset } from '@/lib/priority-assets';
-import { contact } from '@/lib/site-content';
 
 export function SiteHeader({ floating = false }: { floating?: boolean }) {
   const logo = findSiteAsset('i-9T6g4MC-XL_color1.png') ?? findSiteAsset('logo-main.png') ?? findSiteAsset('logo.png');
@@ -31,11 +30,10 @@ export function SiteFooter() {
           <a href="http://facebook.com/pixilens" className="hover:text-[#17130f]">Facebook</a>
           <a href="http://instagram.com/pixilens.photography" className="hover:text-[#17130f]">Instagram</a>
           <a href="https://www.youtube.com/channel/UCrGsCtzAtC0-xLj9UK0sNcw" className="hover:text-[#17130f]">YouTube</a>
-          <a href={contact.messengerHref} className="hover:text-[#17130f]">DM</a>
         </div>
         <p>
           Copyrights © <Link href="/" className="text-[#17130f]/75 hover:text-[#17130f]">Pixilens</Link> Photography. All rights reserved.{' '}
-          <a href={contact.messengerHref} className="text-[#17130f]/75 hover:text-[#17130f]">Click here to send a DM to get in touch directly.</a>
+          <Link href="/Direct-Message" className="text-[#17130f]/75 hover:text-[#17130f]">Contact us</Link>
         </p>
       </div>
     </footer>

@@ -6,7 +6,7 @@ const forms = [
   { label: 'Get Started', href: '/Get-Started', description: 'General enquiry — tell us about your event and get started.' },
   { label: 'Booking Form', href: '/Booking-Form', description: 'Book photography, videography, and add-on packages with release agreement.' },
   { label: 'Photobooth Enquiry', href: '/Photobooth-Enquiry', description: 'Rent an iPad photobooth, 360 booth, or video guestbook for your event.' },
-  { label: 'Direct Message', href: '/Direct-Message', description: 'Reach us via WhatsApp, phone, email, or Messenger.' },
+  { label: 'Contact us', href: '/Direct-Message', description: 'Reach us via WhatsApp, phone, or email.' },
   { label: 'Release Agreement', href: '/Release-Agreement', description: 'Review and sign the standard photography, videography, and digital media release agreement.' },
 ];
 

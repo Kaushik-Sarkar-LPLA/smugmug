@@ -28,7 +28,6 @@ export const contact = {
   whatsappHref: 'https://api.whatsapp.com/send?phone=17372310033',
   email: 'contact@pixilens.com',
   emailHref: 'mailto:contact@pixilens.com',
-  messengerHref: 'http://m.me/pixilens',
   honeybookHref: '/Booking-Form',
   vcardHref: 'https://highvoltage.fashion/PixilensPhotographyAustin.vcf',
   releaseHref: '/Release-Agreement',
