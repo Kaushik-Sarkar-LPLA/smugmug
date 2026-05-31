@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
 import { homepageHeroFullSrc } from '@/lib/homepage-images';
-import { heroOptimizedSrc } from '@/lib/hero-image-url';
+import { heroPreloadSrc } from '@/lib/hero-image-url';
 import { HeroSlideshow } from '@/components/home/HeroSlideshow';
 
 /** First autoplay cycle — preload all of these before showing the page. */
@@ -31,7 +31,7 @@ function loadImage(url: string, attempt = 1): Promise<void> {
 
 async function preloadHeroSlides(slides: HomepageItem[]) {
   const targets = slides.slice(0, BOOT_SLIDE_COUNT);
-  const urls = targets.map((slide) => heroOptimizedSrc(homepageHeroFullSrc(slide)));
+  const urls = targets.map((slide) => heroPreloadSrc(slide));
   await Promise.all(urls.map((url) => loadImage(url)));
 }
 

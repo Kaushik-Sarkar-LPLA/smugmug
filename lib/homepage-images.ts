@@ -5,9 +5,13 @@ export function homepageThumbSrc(slide: HomepageItem) {
   return slide.displayUrl || slide.imageUrl;
 }
 
-/** Full source for hero at viewport resolution (via Next Image optimizer). */
+/** Hero slideshow source — pre-compressed web version when available. */
 export function homepageHeroFullSrc(slide: HomepageItem) {
-  return slide.imageUrl || slide.displayUrl;
+  return slide.heroUrl || slide.imageUrl || slide.displayUrl;
+}
+
+export function homepageHeroIsWebOptimized(slide: HomepageItem) {
+  return Boolean(slide.heroUrl);
 }
 
 /** Grid columns are narrow; display URL matches on-screen pixel density. */

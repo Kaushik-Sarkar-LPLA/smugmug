@@ -8,6 +8,10 @@ export type HomepageItem = {
   fileName: string;
   imageUrl: string;
   displayUrl: string;
+  /** Pre-compressed web hero (WebP/JPEG ~1920px) — preferred for slideshow. */
+  heroUrl?: string;
+  heroWidth?: number;
+  heroHeight?: number;
   width: number;
   height: number;
   sourceWebUri: string;

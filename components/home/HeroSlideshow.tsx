@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
-import { homepageHeroFullSrc } from '@/lib/homepage-images';
-import { HERO_IMAGE_QUALITY, heroImageSizes, heroOptimizedSrc } from '@/lib/hero-image-url';
+import { homepageHeroFullSrc, homepageHeroIsWebOptimized } from '@/lib/homepage-images';
+import { HERO_IMAGE_QUALITY, heroImageSizes, heroPreloadSrc } from '@/lib/hero-image-url';
 
 function preloadImage(url: string) {
   if (!url) return;
@@ -50,7 +50,7 @@ export function HeroSlideshow({
     const warm = [items[0], items[1], items[2], activeSlide, nextSlide].filter(Boolean) as HomepageItem[];
     const seen = new Set<string>();
     for (const slide of warm) {
-      const url = heroOptimizedSrc(homepageHeroFullSrc(slide));
+      const url = heroPreloadSrc(slide);
       if (url && !seen.has(url)) {
         seen.add(url);
         preloadImage(url);
@@ -61,7 +61,7 @@ export function HeroSlideshow({
   useEffect(() => {
     if (!items.length) return;
     for (const slide of items.slice(0, 3)) {
-      const url = heroOptimizedSrc(homepageHeroFullSrc(slide));
+      const url = heroPreloadSrc(slide);
       if (!url) continue;
       const img = new window.Image();
       img.src = url;
@@ -96,7 +96,9 @@ export function HeroSlideshow({
         if (!isActive && !isNext) return null;
 
         const fullSrc = homepageHeroFullSrc(slide);
+        const directSrc = homepageHeroIsWebOptimized(slide);
         const fullLoaded = fullLoadedIds.has(slide.id);
+        const visibleClass = `object-cover transition-opacity duration-700 ${fullLoaded ? (isActive ? 'hero-active-slide opacity-100' : 'opacity-100') : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`;
 
         return (
           <div
@@ -104,18 +106,32 @@ export function HeroSlideshow({
             className={`absolute inset-0 ${isActive ? 'z-[2]' : 'z-[1]'}`}
             aria-hidden={!isActive}
           >
-            <Image
-              src={fullSrc}
-              alt=""
-              fill
-              priority={index <= 2}
-              loading={index <= 2 ? 'eager' : 'lazy'}
-              sizes={heroImageSizes}
-              quality={HERO_IMAGE_QUALITY}
-              className={`object-cover transition-opacity duration-700 ${fullLoaded ? (isActive ? 'hero-active-slide opacity-100' : 'opacity-100') : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`}
-              style={{ objectPosition: slide.objectPosition }}
-              onLoad={() => markFullLoaded(slide.id)}
-            />
+            {directSrc ? (
+              // Pre-compressed hero WebP/JPEG — serve directly, no double optimization.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={fullSrc}
+                alt=""
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                decoding="async"
+                className={`absolute inset-0 h-full w-full ${visibleClass}`}
+                style={{ objectPosition: slide.objectPosition }}
+                onLoad={() => markFullLoaded(slide.id)}
+              />
+            ) : (
+              <Image
+                src={fullSrc}
+                alt=""
+                fill
+                priority={index <= 2}
+                loading={index <= 2 ? 'eager' : 'lazy'}
+                sizes={heroImageSizes}
+                quality={HERO_IMAGE_QUALITY}
+                className={visibleClass}
+                style={{ objectPosition: slide.objectPosition }}
+                onLoad={() => markFullLoaded(slide.id)}
+              />
+            )}
           </div>
         );
       })}
