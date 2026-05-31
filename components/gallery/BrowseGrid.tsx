@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrowseCover } from '@/components/gallery/BrowseCover';
 import type { PublicBrowseFolder, PublicBrowseGallery } from '@/lib/admin/library-store';
 
 export function BrowseGrid({
@@ -21,14 +22,7 @@ export function BrowseGrid({
       {folders.map((folder) => (
         <Link key={folder.id} href={`/folders/${folder.slug}`} className="glass-panel group overflow-hidden rounded-xl">
           <div className="relative aspect-[4/3] overflow-hidden bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(214,181,109,0.18))]">
-            {folder.coverUrl ? (
-              <img
-                src={folder.coverUrl}
-                alt={folder.title}
-                className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
-                loading="lazy"
-              />
-            ) : null}
+            <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6">
               <p className="text-xs uppercase tracking-[0.32em] text-white/55">Folder</p>
@@ -43,15 +37,8 @@ export function BrowseGrid({
 
       {galleries.map((gallery) => (
         <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
-          <div className="relative aspect-[3/4] overflow-hidden bg-white/60">
-            {gallery.coverUrl ? (
-              <img
-                src={gallery.coverUrl}
-                alt={gallery.title}
-                className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
-                loading="lazy"
-              />
-            ) : null}
+          <div className="relative aspect-[3/4] overflow-hidden bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(214,181,109,0.18))]">
+            <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6">
               <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>

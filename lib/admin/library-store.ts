@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { ensureDatabase, getPool, hasDatabase, qname } from '@/lib/admin/db';
 import { mediaImageUrl } from '@/lib/media-url';
+import { isExcludedPublicLibraryItem, publicLibrarySqlExclude } from '@/lib/public-library-filters';
 
 export type Visibility = 'public' | 'private' | 'draft';
 
@@ -464,6 +465,16 @@ function galleryFromRow(row: any): GalleryRecord {
 }
 
 const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status IN ('done', 'done_with_local_original'))`;
+const PUBLIC_FOLDER_WHERE = `visibility = 'public' AND ${publicLibrarySqlExclude('folders')}`;
+const PUBLIC_GALLERY_WHERE = `visibility = 'public' AND ${publicLibrarySqlExclude('galleries')}`;
+
+function isPublicFolderRecord(folder: FolderRecord) {
+  return folder.visibility === 'public' && !isExcludedPublicLibraryItem(folder);
+}
+
+function isPublicGalleryRecord(gallery: GalleryRecord) {
+  return gallery.visibility === 'public' && !isExcludedPublicLibraryItem(gallery);
+}
 
 function folderFromRow(row: any): FolderRecord {
   return {
@@ -505,10 +516,11 @@ export type PublicBrowseFolder = {
 
 function folderCoverFromStore(store: LibraryStore, folderId: string): string {
   const galleries = store.galleries
-    .filter((gallery) => gallery.folderId === folderId && gallery.visibility === 'public')
+    .filter((gallery) => gallery.folderId === folderId && isPublicGalleryRecord(gallery))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 
   for (const gallery of galleries) {
+    if (isExcludedPublicLibraryItem(gallery)) continue;
     const images = store.media
       .filter(
         (item) =>
@@ -523,10 +535,11 @@ function folderCoverFromStore(store: LibraryStore, folderId: string): string {
   }
 
   const childFolders = store.folders
-    .filter((folder) => folder.parentId === folderId && folder.visibility === 'public')
+    .filter((folder) => folder.parentId === folderId && isPublicFolderRecord(folder))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 
   for (const child of childFolders) {
+    if (isExcludedPublicLibraryItem(child)) continue;
     const url = folderCoverFromStore(store, child.id);
     if (url) return url;
   }
@@ -558,13 +571,13 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
       SELECT f.id, ft.root_id, f.sort_order, f.title, ft.depth + 1
       FROM ${qname('folders')} f
       INNER JOIN folder_tree ft ON f.parent_id = ft.id
-      WHERE f.visibility = 'public'
+      WHERE f.visibility = 'public' AND ${publicLibrarySqlExclude('f')}
     )
     SELECT DISTINCT ON (ft.root_id)
       ft.root_id AS folder_id,
       COALESCE(NULLIF(m.public_url, ''), NULLIF(m.display_url, '')) AS cover_url
     FROM folder_tree ft
-    INNER JOIN ${qname('galleries')} g ON g.folder_id = ft.id AND g.visibility = 'public'
+    INNER JOIN ${qname('galleries')} g ON g.folder_id = ft.id AND g.visibility = 'public' AND ${publicLibrarySqlExclude('g')}
     INNER JOIN LATERAL (
       SELECT public_url, display_url
       FROM ${qname('media')} m2
@@ -662,15 +675,15 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
 
 function browseFoldersFromStore(store: LibraryStore, parentFolderId: string, coverByFolderId?: Map<string, string>): PublicBrowseFolder[] {
   const folders = store.folders
-    .filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public')
+    .filter((folder) => folder.parentId === parentFolderId && isPublicFolderRecord(folder))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
   return folders.map((folder) => ({
     id: folder.id,
     title: folder.title,
     slug: folder.slug,
     description: folder.description,
-    childFolderCount: store.folders.filter((item) => item.parentId === folder.id && item.visibility === 'public').length,
-    galleryCount: store.galleries.filter((item) => item.folderId === folder.id && item.visibility === 'public').length,
+    childFolderCount: store.folders.filter((item) => item.parentId === folder.id && isPublicFolderRecord(item)).length,
+    galleryCount: store.galleries.filter((item) => item.folderId === folder.id && isPublicGalleryRecord(item)).length,
     coverUrl: coverByFolderId?.get(folder.id) || folderCoverFromStore(store, folder.id),
   }));
 }
@@ -679,10 +692,10 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
   if (!hasDatabase()) {
     const store = await getLibraryFromJson();
     const galleries = store.galleries
-      .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
+      .filter((gallery) => gallery.folderId === parentFolderId && isPublicGalleryRecord(gallery))
       .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
     const folderCovers = await enrichFolderCovers(
-      store.folders.filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public').map((folder) => folder.id),
+      store.folders.filter((folder) => folder.parentId === parentFolderId && isPublicFolderRecord(folder)).map((folder) => folder.id),
     );
     return {
       folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
@@ -694,10 +707,10 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     await ensureDatabase();
     const db = getPool();
     const [foldersRes, galleriesRes, childFolderCounts, galleryCounts] = await Promise.all([
-      db.query(`SELECT * FROM ${qname('folders')} WHERE parent_id = $1 AND visibility = 'public' ORDER BY sort_order, title`, [parentFolderId]),
-      db.query(`SELECT * FROM ${qname('galleries')} WHERE folder_id = $1 AND visibility = 'public' ORDER BY sort_order, title`, [parentFolderId]),
-      db.query(`SELECT parent_id, count(*)::int AS total FROM ${qname('folders')} WHERE visibility = 'public' GROUP BY parent_id`),
-      db.query(`SELECT folder_id, count(*)::int AS total FROM ${qname('galleries')} WHERE visibility = 'public' GROUP BY folder_id`),
+      db.query(`SELECT * FROM ${qname('folders')} WHERE parent_id = $1 AND ${PUBLIC_FOLDER_WHERE} ORDER BY sort_order, title`, [parentFolderId]),
+      db.query(`SELECT * FROM ${qname('galleries')} WHERE folder_id = $1 AND ${PUBLIC_GALLERY_WHERE} ORDER BY sort_order, title`, [parentFolderId]),
+      db.query(`SELECT parent_id, count(*)::int AS total FROM ${qname('folders')} WHERE ${PUBLIC_FOLDER_WHERE} GROUP BY parent_id`),
+      db.query(`SELECT folder_id, count(*)::int AS total FROM ${qname('galleries')} WHERE ${PUBLIC_GALLERY_WHERE} GROUP BY folder_id`),
     ]);
 
     const childCountByFolder = new Map<string, number>(childFolderCounts.rows.map((row) => [row.parent_id, row.total]));
@@ -718,10 +731,10 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
   } catch {
     const store = await getLibraryFromJson();
     const galleries = store.galleries
-      .filter((gallery) => gallery.folderId === parentFolderId && gallery.visibility === 'public')
+      .filter((gallery) => gallery.folderId === parentFolderId && isPublicGalleryRecord(gallery))
       .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
     const folderCovers = await enrichFolderCovers(
-      store.folders.filter((folder) => folder.parentId === parentFolderId && folder.visibility === 'public').map((folder) => folder.id),
+      store.folders.filter((folder) => folder.parentId === parentFolderId && isPublicFolderRecord(folder)).map((folder) => folder.id),
     );
     return {
       folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
@@ -732,12 +745,14 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
 
 export async function getPublicFolderBySlug(slug: string): Promise<FolderRecord | null> {
   const folders = await getFoldersForAdmin();
-  return folders.find((folder) => folder.slug === slug && folder.visibility === 'public') || null;
+  const folder = folders.find((item) => item.slug === slug && isPublicFolderRecord(item)) || null;
+  return folder;
 }
 
 export async function getPublicGalleryBySlug(slug: string): Promise<GalleryRecord | null> {
   const galleries = await getGalleriesForAdmin();
-  return galleries.find((gallery) => gallery.slug === slug && gallery.visibility === 'public') || null;
+  const gallery = galleries.find((item) => item.slug === slug && isPublicGalleryRecord(item)) || null;
+  return gallery;
 }
 
 export async function getFolderByUrlPath(urlPath: string): Promise<FolderRecord | null> {

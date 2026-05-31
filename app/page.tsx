@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { preload } from 'react-dom';
 import { SiteShell } from '@/components/SiteShell';
 import { HeroSlideshow } from '@/components/home/HeroSlideshow';
 import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
+import { homepageGridSrc, homepageHeroFullSrc, homepageThumbSrc } from '@/lib/homepage-images';
 
 export const revalidate = 0;
 
@@ -10,6 +12,17 @@ export default async function Home() {
   const config = await getHomepageConfig();
   const heroSlides = config.items.filter((item) => item.enabled && item.useInHero).sort((a, b) => a.sortOrder - b.sortOrder);
   const gallerySlides = config.items.filter((item) => item.enabled && item.useInGallery).sort((a, b) => a.sortOrder - b.sortOrder);
+
+  for (const slide of heroSlides.slice(0, 2)) {
+    const thumb = homepageThumbSrc(slide);
+    const full = homepageHeroFullSrc(slide);
+    preload(thumb, { as: 'image', fetchPriority: 'high' });
+    if (full !== thumb) preload(full, { as: 'image' });
+  }
+
+  for (const slide of gallerySlides.slice(0, 8)) {
+    preload(homepageGridSrc(slide), { as: 'image' });
+  }
 
   return (
     <SiteShell floatingHeader>
@@ -33,20 +46,28 @@ export default async function Home() {
 
       <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
-          {gallerySlides.map((slide, index) => (
+          {gallerySlides.map((slide, index) => {
+            const aspect = slide.width && slide.height ? slide.height / slide.width : 2 / 3;
+            const displayWidth = 640;
+            const displayHeight = Math.max(1, Math.round(displayWidth * aspect));
+
+            return (
             <figure key={slide.sourceWebUri} className="group mb-3 break-inside-avoid overflow-hidden rounded-lg bg-white shadow-[0_18px_60px_rgba(71,52,24,0.13)]">
               <ImageWithLoader
-                src={slide.imageUrl || slide.displayUrl}
+                src={homepageGridSrc(slide)}
                 alt={slide.alt || `Pixilens gallery image ${index + 1}`}
-                width={slide.width || 1200}
-                height={slide.height || 800}
+                width={displayWidth}
+                height={displayHeight}
                 className="h-auto w-full object-cover opacity-95 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-                quality={85}
+                quality={90}
                 sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                loading={index < 6 ? 'eager' : 'lazy'}
+                loading={index < 10 ? 'eager' : 'lazy'}
+                priority={index < 4}
+                fetchPriority={index < 4 ? 'high' : 'auto'}
               />
             </figure>
-          ))}
+            );
+          })}
         </div>
       </section>
     </SiteShell>

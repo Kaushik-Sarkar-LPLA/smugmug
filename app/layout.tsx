@@ -15,6 +15,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://i.ibb.co" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://i.ibb.co" />
+      </head>
       <body>
         <Suspense fallback={null}>
           <NavigationProgress />
