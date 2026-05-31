@@ -1,9 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
-import { homepageHeroFullSrc, homepageThumbSrc } from '@/lib/homepage-images';
+import { homepageHeroFullSrc } from '@/lib/homepage-images';
+import { HERO_IMAGE_QUALITY, heroImageSizes, heroOptimizedSrc } from '@/lib/hero-image-url';
 
 function preloadImage(url: string) {
   if (!url) return;
@@ -15,45 +16,60 @@ export function HeroSlideshow({
   slides,
   duration,
   autoplay = true,
-  initialLoadedIds,
 }: {
   slides: HomepageItem[];
   duration: number;
   autoplay?: boolean;
-  initialLoadedIds?: Set<string>;
 }) {
   const items = useMemo(() => slides.filter(Boolean), [slides]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
-  const [fullLoadedIds, setFullLoadedIds] = useState<Set<string>>(() => new Set(initialLoadedIds));
+  const [fullLoadedIds, setFullLoadedIds] = useState<Set<string>>(() => new Set());
 
   const activeSlide = items[activeIndex] || null;
   const nextIndex = items.length ? (activeIndex + 1) % items.length : 0;
   const nextSlide = items[nextIndex] || null;
 
+  const markFullLoaded = useCallback((id: string) => {
+    setFullLoadedIds((current) => {
+      if (current.has(id)) return current;
+      const next = new Set(current);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     setActiveIndex(0);
     setProgressKey(0);
-    setFullLoadedIds(new Set(initialLoadedIds));
-  }, [items, initialLoadedIds]);
+    setFullLoadedIds(new Set());
+  }, [items]);
 
   useEffect(() => {
     if (!items.length) return;
     const warm = [items[0], items[1], items[2], activeSlide, nextSlide].filter(Boolean) as HomepageItem[];
     const seen = new Set<string>();
     for (const slide of warm) {
-      const thumb = homepageThumbSrc(slide);
-      const full = homepageHeroFullSrc(slide);
-      if (thumb && !seen.has(thumb)) {
-        seen.add(thumb);
-        preloadImage(thumb);
-      }
-      if (full && full !== thumb && !seen.has(full)) {
-        seen.add(full);
-        preloadImage(full);
+      const url = heroOptimizedSrc(homepageHeroFullSrc(slide));
+      if (url && !seen.has(url)) {
+        seen.add(url);
+        preloadImage(url);
       }
     }
   }, [items, activeSlide, nextSlide]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    for (const slide of items.slice(0, 3)) {
+      const url = heroOptimizedSrc(homepageHeroFullSrc(slide));
+      if (!url) continue;
+      const img = new window.Image();
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        markFullLoaded(slide.id);
+      }
+    }
+  }, [items, markFullLoaded]);
 
   useEffect(() => {
     if (!autoplay || items.length <= 1) return;
@@ -63,15 +79,6 @@ export function HeroSlideshow({
     }, duration * 1000);
     return () => window.clearInterval(timer);
   }, [autoplay, duration, items.length]);
-
-  const markFullLoaded = (id: string) => {
-    setFullLoadedIds((current) => {
-      if (current.has(id)) return current;
-      const next = new Set(current);
-      next.add(id);
-      return next;
-    });
-  };
 
   if (!items.length) {
     return <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />;
@@ -88,10 +95,8 @@ export function HeroSlideshow({
         const isNext = index === nextIndex;
         if (!isActive && !isNext) return null;
 
-        const thumbSrc = homepageThumbSrc(slide);
         const fullSrc = homepageHeroFullSrc(slide);
         const fullLoaded = fullLoadedIds.has(slide.id);
-        const showFull = fullLoaded;
 
         return (
           <div
@@ -99,26 +104,15 @@ export function HeroSlideshow({
             className={`absolute inset-0 ${isActive ? 'z-[2]' : 'z-[1]'}`}
             aria-hidden={!isActive}
           >
-            {thumbSrc && !showFull ? (
-              <img
-                src={thumbSrc}
-                alt=""
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ objectPosition: slide.objectPosition }}
-              />
-            ) : null}
-
             <Image
               src={fullSrc}
               alt=""
               fill
               priority={index <= 2}
               loading={index <= 2 ? 'eager' : 'lazy'}
-              sizes="100vw"
-              quality={92}
-              className={`object-cover transition-opacity duration-500 ${showFull ? (isActive ? 'hero-active-slide opacity-100' : 'opacity-100') : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`}
+              sizes={heroImageSizes}
+              quality={HERO_IMAGE_QUALITY}
+              className={`object-cover transition-opacity duration-700 ${fullLoaded ? (isActive ? 'hero-active-slide opacity-100' : 'opacity-100') : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`}
               style={{ objectPosition: slide.objectPosition }}
               onLoad={() => markFullLoaded(slide.id)}
             />
