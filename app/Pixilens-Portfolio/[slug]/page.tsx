@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import GalleryGrid from '@/components/GalleryGrid';
+import { mediaImageUrl, mediaThumbUrl } from '@/lib/media-url';
 import { findPortfolioGallery, getPortfolioGalleries } from '@/lib/portfolio-db';
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +31,11 @@ export default async function PortfolioGalleryPage({ params }: { params: Promise
   if (!gallery) notFound();
 
   const gridImages = gallery.images
-    .filter((img) => img.displayUrl || img.publicUrl)
+    .filter((img) => mediaThumbUrl(img))
     .map((img) => ({
       id: img.id,
-      url: img.displayUrl || img.publicUrl,
+      url: mediaThumbUrl(img),
+      fullUrl: mediaImageUrl(img),
       title: img.title || img.caption || gallery.title,
       width: img.width,
       height: img.height,

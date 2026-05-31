@@ -503,7 +503,7 @@ export type PublicBrowseFolder = {
   coverUrl: string;
 };
 
-function folderCoverFromStore(store: LibraryStore, folderId: string) {
+function folderCoverFromStore(store: LibraryStore, folderId: string): string {
   const galleries = store.galleries
     .filter((gallery) => gallery.folderId === folderId && gallery.visibility === 'public')
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
@@ -519,6 +519,15 @@ function folderCoverFromStore(store: LibraryStore, folderId: string) {
       .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
     const cover = (gallery.coverMediaId ? images.find((item) => item.id === gallery.coverMediaId) : null) || images[0] || null;
     const url = mediaImageUrl(cover);
+    if (url) return url;
+  }
+
+  const childFolders = store.folders
+    .filter((folder) => folder.parentId === folderId && folder.visibility === 'public')
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+
+  for (const child of childFolders) {
+    const url = folderCoverFromStore(store, child.id);
     if (url) return url;
   }
 
@@ -541,11 +550,22 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
   await ensureDatabase();
   const db = getPool();
   const res = await db.query(
-    `SELECT DISTINCT ON (g.folder_id)
-      g.folder_id,
+    `WITH RECURSIVE folder_tree AS (
+      SELECT id, id AS root_id, sort_order, title, 0 AS depth
+      FROM ${qname('folders')}
+      WHERE id = ANY($1::text[]) AND visibility = 'public'
+      UNION ALL
+      SELECT f.id, ft.root_id, f.sort_order, f.title, ft.depth + 1
+      FROM ${qname('folders')} f
+      INNER JOIN folder_tree ft ON f.parent_id = ft.id
+      WHERE f.visibility = 'public'
+    )
+    SELECT DISTINCT ON (ft.root_id)
+      ft.root_id AS folder_id,
       COALESCE(NULLIF(m.public_url, ''), NULLIF(m.display_url, '')) AS cover_url
-    FROM ${qname('galleries')} g
-    JOIN LATERAL (
+    FROM folder_tree ft
+    INNER JOIN ${qname('galleries')} g ON g.folder_id = ft.id AND g.visibility = 'public'
+    INNER JOIN LATERAL (
       SELECT public_url, display_url
       FROM ${qname('media')} m2
       WHERE m2.gallery_id = g.id
@@ -558,8 +578,7 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
         m2.created_at
       LIMIT 1
     ) m ON true
-    WHERE g.folder_id = ANY($1::text[]) AND g.visibility = 'public'
-    ORDER BY g.folder_id, g.sort_order, g.title`,
+    ORDER BY ft.root_id, ft.depth, ft.sort_order, ft.title, g.sort_order, g.title`,
     [folderIds],
   );
 

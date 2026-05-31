@@ -6,6 +6,7 @@ import GalleryLightbox from '@/components/GalleryLightbox';
 export type GalleryImage = {
   id: string;
   url: string;
+  fullUrl?: string;
   title: string;
   width?: number;
   height?: number;
@@ -14,7 +15,7 @@ export type GalleryImage = {
 export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loadedMap, setLoadedMap] = useState<Set<string>>(new Set());
+  const [loadedMap, setLoadedMap] = useState<Set<string>>(() => new Set());
 
   const openLightbox = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -23,11 +24,11 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
 
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
   const prevImage = useCallback(
-    () => setCurrentIndex((i) => (i === 0 ? images.length - 1 : i - 1)),
+    () => setCurrentIndex((index) => (index === 0 ? images.length - 1 : index - 1)),
     [images.length],
   );
   const nextImage = useCallback(
-    () => setCurrentIndex((i) => (i === images.length - 1 ? 0 : i + 1)),
+    () => setCurrentIndex((index) => (index === images.length - 1 ? 0 : index + 1)),
     [images.length],
   );
 
@@ -37,6 +38,7 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
         {images.map((image, index) => (
           <button
             key={image.id}
+            type="button"
             onClick={() => openLightbox(index)}
             className={`group relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-white/60 shadow-[0_8px_30px_rgba(71,52,24,0.10)] transition-shadow ${loadedMap.has(image.id) ? '' : 'image-loading'} hover:shadow-[0_12px_40px_rgba(71,52,24,0.18)]`}
           >
@@ -48,15 +50,15 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
               onLoad={() => setLoadedMap((prev) => new Set(prev).add(image.id))}
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/40">
-              <button className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100 active:scale-90 active:bg-white/20 cursor-pointer">
+              <span className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
                 View image
-              </button>
+              </span>
             </div>
           </button>
         ))}
       </div>
 
-      {lightboxOpen && (
+      {lightboxOpen ? (
         <GalleryLightbox
           images={images}
           currentIndex={currentIndex}
@@ -64,7 +66,7 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
           onPrev={prevImage}
           onNext={nextImage}
         />
-      )}
+      ) : null}
     </>
   );
 }

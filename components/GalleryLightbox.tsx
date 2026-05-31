@@ -1,13 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-
-type LightboxImage = {
-  url: string;
-  title: string;
-  width?: number;
-  height?: number;
-};
+import type { GalleryImage } from '@/components/GalleryGrid';
 
 export default function GalleryLightbox({
   images,
@@ -16,20 +10,21 @@ export default function GalleryLightbox({
   onPrev,
   onNext,
 }: {
-  images: LightboxImage[];
+  images: GalleryImage[];
   currentIndex: number;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
   const image = images[currentIndex];
+  const fullUrl = image.fullUrl || image.url;
   const [loaded, setLoaded] = useState(false);
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key === 'ArrowLeft') onPrev();
+      if (event.key === 'ArrowRight') onNext();
     },
     [onClose, onPrev, onNext],
   );
@@ -50,6 +45,7 @@ export default function GalleryLightbox({
       onClick={onClose}
     >
       <button
+        type="button"
         onClick={onClose}
         className="absolute right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
         aria-label="Close"
@@ -59,10 +55,25 @@ export default function GalleryLightbox({
         </svg>
       </button>
 
-      {images.length > 1 && (
+      <a
+        href={fullUrl}
+        download
+        target="_blank"
+        rel="noreferrer"
+        onClick={(event) => event.stopPropagation()}
+        className="absolute right-5 top-20 z-10 rounded-full border border-white/35 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-white/85 transition hover:bg-white/20 hover:text-white"
+      >
+        Download
+      </a>
+
+      {images.length > 1 ? (
         <>
           <button
-            onClick={(e) => { e.stopPropagation(); onPrev(); }}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onPrev();
+            }}
             className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
             aria-label="Previous"
           >
@@ -71,7 +82,11 @@ export default function GalleryLightbox({
             </svg>
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onNext(); }}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onNext();
+            }}
             className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
             aria-label="Next"
           >
@@ -80,17 +95,17 @@ export default function GalleryLightbox({
             </svg>
           </button>
         </>
-      )}
+      ) : null}
 
-      <div className="flex h-full w-full items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-full w-full items-center justify-center p-4" onClick={(event) => event.stopPropagation()}>
         <div className={`relative flex max-h-full max-w-full flex-col items-center ${loaded ? '' : 'image-loading'}`}>
           <img
-            src={image.url}
+            src={fullUrl}
             alt={image.title}
             className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl"
             onLoad={() => setLoaded(true)}
           />
-          <p className="mt-3 text-sm text-white/50">{image.title}</p>
+          {image.title ? <p className="mt-3 text-sm text-white/50">{image.title}</p> : null}
         </div>
       </div>
 
