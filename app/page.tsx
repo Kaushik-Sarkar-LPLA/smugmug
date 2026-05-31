@@ -48,8 +48,8 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="px-2 pb-4 pt-10 md:px-4 md:pb-6 md:pt-16">
-        <div className="columns-1 gap-3 sm:columns-2 lg:columns-4 xl:columns-5">
+      <section className="mx-auto max-w-7xl px-5 pb-4 pt-10 md:px-8 md:pb-6 md:pt-16">
+        <div className="columns-1 gap-3 sm:columns-2 lg:columns-4">
           {gallerySlides.map((slide, index) => {
             const aspect = slide.width && slide.height ? slide.height / slide.width : 2 / 3;
             const displayWidth = 640;
@@ -64,7 +64,7 @@ export default async function Home() {
                 height={displayHeight}
                 className="h-auto w-full object-cover opacity-95 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
                 quality={90}
-                sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                sizes="(min-width: 1024px) 320px, (min-width: 640px) 50vw, 100vw"
                 loading={index < 10 ? 'eager' : 'lazy'}
                 priority={index < 4}
                 fetchPriority={index < 4 ? 'high' : 'auto'}
