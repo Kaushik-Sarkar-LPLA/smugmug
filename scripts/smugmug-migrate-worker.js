@@ -4,6 +4,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const sharp = require('sharp');
 
 function loadEnv() {
   const envPath = path.resolve(__dirname, '..', '.env');
@@ -35,6 +36,10 @@ const onlyPathPrefix = args.pathPrefix || '';
 const includeAlreadyDone = args.includeAlreadyDone === 'true';
 const dryRun = args.dryRun === 'true';
 const retryErrors = args.retryErrors === 'true';
+const errorsOnly = args.errorsOnly === 'true';
+const IMGBB_MAX_BYTES = Number(args.maxUploadBytes || process.env.IMGBB_MAX_BYTES || 31_500_000);
+const jpegQuality = Number(args.jpegQuality || process.env.MIGRATE_JPEG_QUALITY || 85);
+const maxDimension = Number(args.maxDimension || process.env.MIGRATE_MAX_DIMENSION || 3000);
 const skipPathPatterns = (args.skipPath || process.env.SMUGMUG_SKIP_PATHS || '/Automatic-iOS-Uploads')
   .split(',')
   .map((value) => value.trim())
@@ -88,15 +93,17 @@ function oauthHeader(method, rawUrl, params = {}) {
   return 'OAuth ' + Object.entries(oauth).map(([k, v]) => `${enc(k)}="${enc(v)}"`).join(', ');
 }
 
-async function smugGet(apiPath, params = {}, retries = 4) {
+async function smugGet(apiPath, params = {}, retries = 5) {
   await sleep(smugDelayMs);
   const url = new URL(`https://api.smugmug.com${apiPath}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   for (let attempt = 1; attempt <= retries; attempt++) {
     const res = await fetch(url, { headers: { Accept: 'application/json', Authorization: oauthHeader('GET', `https://api.smugmug.com${apiPath}`, params), 'User-Agent': 'pixilens-smugmug-migrator/1.0' } });
     if (res.ok) return res.json();
-    if (![429, 500, 502, 503, 504].includes(res.status) || attempt === retries) throw new Error(`SmugMug ${apiPath} HTTP ${res.status}: ${await res.text()}`);
-    await sleep(attempt * 4000);
+    const body = await res.text();
+    const retryable = [429, 500, 502, 503, 504].includes(res.status) || (res.status === 401 && /nonce_used|oauth_problem/.test(body));
+    if (!retryable || attempt === retries) throw new Error(`SmugMug ${apiPath} HTTP ${res.status}: ${body}`);
+    await sleep(attempt * 2000);
   }
 }
 
@@ -186,13 +193,77 @@ async function uploadToImgBB(buffer, name) {
   return body.data;
 }
 
+function isTooBigError(error) {
+  return String(error?.message || error).includes('File too big');
+}
+
+async function compressForImgBB(buffer) {
+  let quality = jpegQuality;
+  let dimension = maxDimension;
+  for (let pass = 0; pass < 8; pass++) {
+    const out = await sharp(buffer, { failOn: 'none' })
+      .rotate()
+      .resize({ width: dimension, height: dimension, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+    if (out.length <= IMGBB_MAX_BYTES) {
+      const meta = await sharp(out).metadata();
+      return { buffer: out, width: meta.width || null, height: meta.height || null };
+    }
+    if (quality > 55) quality -= 10;
+    else dimension = Math.floor(dimension * 0.85);
+  }
+  throw new Error(`Compressed image still exceeds ImgBB limit (${IMGBB_MAX_BYTES} bytes)`);
+}
+
+async function findLocalOriginal(galleryId, mediaId) {
+  const dir = path.join(mediaRootDir(), 'photo-originals', galleryId);
+  if (!fs.existsSync(dir)) return null;
+  const match = fs.readdirSync(dir).find((file) => file.startsWith(`${mediaId}-`));
+  return match ? path.join(dir, match) : null;
+}
+
+async function uploadPhotoBuffer(originalBuffer, uploadName, item, galleryId, mediaId, title) {
+  let uploaded;
+  let localOriginal = null;
+  let status = 'done';
+  let uploadBuffer = originalBuffer;
+  if (originalBuffer.length > IMGBB_MAX_BYTES) {
+    const compressed = await compressForImgBB(originalBuffer);
+    uploadBuffer = compressed.buffer;
+    uploaded = dryRun
+      ? { url: 'dry-run', display_url: 'dry-run', delete_url: '', width: compressed.width, height: compressed.height }
+      : await uploadToImgBB(uploadBuffer, `${uploadName}--compressed`);
+    const ext = path.extname(item?.FileName || '.jpg') || '.jpg';
+    localOriginal = await archiveOriginal(originalBuffer, galleryId, mediaId, title, ext);
+    status = 'done_with_local_original';
+    return { uploaded, localOriginal, status, uploadBufferLength: uploadBuffer.length };
+  }
+  try {
+    uploaded = dryRun
+      ? { url: 'dry-run', display_url: 'dry-run', delete_url: '', width: item?.OriginalWidth, height: item?.OriginalHeight }
+      : await uploadToImgBB(uploadBuffer, uploadName);
+  } catch (uploadError) {
+    if (!isTooBigError(uploadError)) throw uploadError;
+    const compressed = await compressForImgBB(originalBuffer);
+    const ext = path.extname(item?.FileName || '.jpg') || '.jpg';
+    localOriginal = await archiveOriginal(originalBuffer, galleryId, mediaId, title, ext);
+    uploaded = dryRun
+      ? { url: 'dry-run', display_url: 'dry-run', delete_url: '', width: compressed.width, height: compressed.height }
+      : await uploadToImgBB(compressed.buffer, `${uploadName}--compressed`);
+    status = 'done_with_local_original';
+    uploadBuffer = compressed.buffer;
+  }
+  return { uploaded, localOriginal, status, uploadBufferLength: uploadBuffer.length };
+}
+
 async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
   const mediaId = id('media', item.Uri || `${galleryId}:${item.ImageKey}`);
   const existing = await pool.query(`SELECT migration_status FROM ${qname('media')} WHERE id=$1`, [mediaId]);
   if (existing.rowCount) {
     const status = existing.rows[0].migration_status;
     if ((status === 'done' || status === 'done_with_local_original') && !includeAlreadyDone) return 'skipped';
-    if (status === 'error' && !retryErrors) return 'skipped';
+    if (status === 'error' && !retryErrors && !errorsOnly) return 'skipped';
   }
   const title = item.Title || item.FileName || item.ImageKey || mediaId;
   const mediaSlug = item.WebUri ? new URL(item.WebUri).pathname.split('/').filter(Boolean).pop() : slugify(title);
@@ -209,33 +280,17 @@ async function migrateMedia(galleryId, galleryPath, item, sortOrder) {
       if (!dryRun) { await fsp.mkdir(path.dirname(absolute), { recursive: true }); await fsp.writeFile(absolute, buffer); }
       await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'video',$3,$4,$5,'public',$6,'local',$7,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'done',NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET migration_status='done',migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, `/api/media/${mediaId}`, absolute, item.FileName || `${mediaId}${ext}`, `video/${(video.Ext || 'mp4')}`, buffer.length, video.Width || item.OriginalWidth || null, video.Height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null]);
     } else {
-      const url = await imageDownloadUrl(item);
-      if (!url) throw new Error('Missing image download URL');
-      const originalBuffer = await downloadBuffer(url);
-      const uploadName = `smugmug--${galleryPath.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-') || galleryId}--${item.ImageKey || mediaId}`;
-      let uploaded;
-      let localOriginal = null;
-      let status = 'done';
-      try {
-        uploaded = dryRun ? { url, display_url: url, delete_url: '', width: item.OriginalWidth, height: item.OriginalHeight } : await uploadToImgBB(originalBuffer, uploadName);
-      } catch (uploadError) {
-        if (!String(uploadError.message || uploadError).includes('File too big')) throw uploadError;
-        const ext = path.extname(item.FileName || '.jpg') || '.jpg';
-        localOriginal = await archiveOriginal(originalBuffer, galleryId, mediaId, title, ext);
-        const candidates = findImageUrls(await imageSizes(item));
-        let fallback = null;
-        for (const candidate of candidates.sort((a, b) => (b.width || 0) - (a.width || 0))) {
-          try {
-            const candidateBuffer = await downloadBuffer(candidate.url);
-            if (candidateBuffer.length > 31_500_000) continue;
-            fallback = { candidate, buffer: candidateBuffer };
-            break;
-          } catch {}
-        }
-        if (!fallback) throw new Error('File too big - original archived locally but no ImgBB display fallback found');
-        uploaded = dryRun ? { url: fallback.candidate.url, display_url: fallback.candidate.url, delete_url: '', width: fallback.candidate.width, height: fallback.candidate.height } : await uploadToImgBB(fallback.buffer, `${uploadName}--display`);
-        status = 'done_with_local_original';
+      const localPath = await findLocalOriginal(galleryId, mediaId);
+      let originalBuffer;
+      if (localPath) {
+        originalBuffer = await fsp.readFile(localPath);
+      } else {
+        const url = await imageDownloadUrl(item);
+        if (!url) throw new Error('Missing image download URL');
+        originalBuffer = await downloadBuffer(url);
       }
+      const uploadName = `smugmug--${galleryPath.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-') || galleryId}--${item.ImageKey || mediaId}`;
+      const { uploaded, localOriginal, status, uploadBufferLength: _uploadLen } = await uploadPhotoBuffer(originalBuffer, uploadName, item, galleryId, mediaId, title);
       await pool.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,local_path,file_name,mime_type,size_bytes,width,height,smugmug_uri,image_key,original_url,url_path,migration_status,migration_error,created_at,updated_at) VALUES ($1,$2,'photo',$3,$4,$5,'public',$6,'imgbb',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NULL,now(),now()) ON CONFLICT (id) DO UPDATE SET public_url=excluded.public_url,display_url=excluded.display_url,delete_url=excluded.delete_url,local_path=excluded.local_path,size_bytes=excluded.size_bytes,width=excluded.width,height=excluded.height,migration_status=excluded.migration_status,migration_error=NULL,updated_at=now()`, [mediaId, galleryId, title, item.Caption || '', mediaSlug, sortOrder, uploaded.url, uploaded.display_url, uploaded.delete_url || null, localOriginal, item.FileName || `${mediaId}.jpg`, item.Format ? `image/${String(item.Format).toLowerCase()}` : 'image/jpeg', originalBuffer.length, uploaded.width || item.OriginalWidth || null, uploaded.height || item.OriginalHeight || null, item.Uri, item.ImageKey, item.WebUri, galleryPath ? `${galleryPath}/${mediaSlug}` : null, status]);
     }
     return 'done';
@@ -259,8 +314,48 @@ async function progress() {
   await pool.end();
 }
 
+function itemFromRow(row) {
+  return {
+    Uri: row.smugmug_uri,
+    ImageKey: row.image_key,
+    FileName: row.file_name,
+    Title: row.title,
+    WebUri: row.original_url,
+    Caption: row.caption || '',
+    IsVideo: row.type === 'video',
+    OriginalWidth: row.width,
+    OriginalHeight: row.height,
+  };
+}
+
+async function retryErrorsOnly() {
+  await ensure();
+  await saveState({ status: 'retrying_errors', startedAt: new Date().toISOString(), mode: 'errors-only' });
+  const rows = (await pool.query(`
+    SELECT m.*, g.url_path AS gallery_path
+    FROM ${qname('media')} m
+    JOIN ${qname('galleries')} g ON g.id = m.gallery_id
+    WHERE m.migration_status = 'error'
+    ORDER BY m.updated_at ASC
+  `)).rows;
+  let mediaDone = 0;
+  let mediaErrors = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const item = itemFromRow(row);
+    await saveState({ retryIndex: i + 1, retryTotal: rows.length, currentMediaId: row.id, mediaDone, mediaErrors });
+    const result = await migrateMedia(row.gallery_id, row.gallery_path, item, row.sort_order);
+    if (result === 'done') mediaDone++;
+    else if (result === 'error') mediaErrors++;
+  }
+  await saveState({ status: 'idle', mode: 'errors-only', mediaDone, mediaErrors, finishedAt: new Date().toISOString() });
+  console.log(JSON.stringify({ retryTotal: rows.length, mediaDone, mediaErrors }, null, 2));
+  await pool.end();
+}
+
 async function main() {
   if (args.progress === 'true') return progress();
+  if (errorsOnly || (retryErrors && args.mode === 'errors-only')) return retryErrorsOnly();
   await ensure();
   const albums = await collect('/api/v2/user/pixilens!albums', 'Album');
   const eligibleAlbums = albums.filter((album) => {
