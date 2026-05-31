@@ -2,10 +2,13 @@ import { redirect } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
 import { field, formatRows, htmlEscape, sendPixilensEmail } from '@/lib/email';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Get Started - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Get Started',
+  description: 'Book an Austin, Dallas, or Houston photographer — tell Pixilens about your wedding, portrait, or event session.',
+  path: '/Get-Started',
+});
 
 const serviceTypes = [
   '360 Videobooth with GoPro (Austin Area)',

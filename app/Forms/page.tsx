@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { FormIcon } from '@/components/FormIcon';
+import { buildMetadata } from '@/lib/seo';
 
 const forms = [
   { label: 'Get Started', href: '/Get-Started', description: 'General enquiry — tell us about your event and get started.' },
@@ -10,9 +11,11 @@ const forms = [
   { label: 'Release Agreement', href: '/Release-Agreement', description: 'Review and sign the standard photography, videography, and digital media release agreement.' },
 ];
 
-export const metadata = {
-  title: 'Forms - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Forms',
+  description: 'Booking and enquiry forms for Pixilens Photography — Austin, Dallas, and Houston weddings, portraits, and events.',
+  path: '/Forms',
+});
 
 export default function FormsPage() {
   return (

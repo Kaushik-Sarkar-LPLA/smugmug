@@ -192,6 +192,10 @@ awk -F= '/^IMGBB_API_KEY=/{if(seen++) next} {print}' .env > .env.tmp && mv .env.
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` / `SESSION_SECRET` | Admin auth |
 | `MS_GRAPH_*` | Form email (booking, etc.) |
 | `ADMIN_DATA_DIR` / `MEDIA_ROOT` | Local media + homepage config (set in `docker run -e`) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL for sitemap, Open Graph, and JSON-LD (e.g. `https://smugmug.pixilens.online`; use `https://pixilens.com` after domain cutover) |
+| `ALLOW_SEARCH_INDEXING` | Set to `false` on private staging to block Google (`noindex`). Omit or `true` on production. |
+
+After enabling indexing, verify `https://YOUR-DOMAIN/robots.txt` and submit `https://YOUR-DOMAIN/sitemap.xml` in [Google Search Console](https://search.google.com/search-console).
 
 **Azure Coolify** also needs base64 **`SSL_CA`**, **`SSL_CERT`**, **`SSL_KEY`** (already configured).  
 **Do not commit** secrets to git.
@@ -211,6 +215,7 @@ ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only 
     --env-file /home/priyanka/pixilens-smugmug-admin/.env \
     -e MEDIA_ROOT=/admin-data/media \
     -e ADMIN_DATA_DIR=/admin-data \
+    -e NEXT_PUBLIC_SITE_URL=https://smugmug.pixilens.online \
     -v /home/priyanka/pixilens-smugmug-admin/data:/admin-data \
     -v /home/priyanka/pixilens-smugmug-admin/certs:/app/certs \
     --label traefik.enable=true \

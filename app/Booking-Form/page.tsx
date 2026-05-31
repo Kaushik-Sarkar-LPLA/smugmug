@@ -3,10 +3,13 @@ import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
 import { field, formatRows, htmlEscape, sendPixilensEmail } from '@/lib/email';
 import { buildCalendarInvite, parseDurationMinutes } from '@/lib/calendar';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Booking Form - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Booking Form',
+  description: 'Book an Austin, Dallas, or Houston photographer or videographer — weddings, portraits, dance, and events with Pixilens.',
+  path: '/Booking-Form',
+});
 
 const services = ['Photography Only', 'Videography Only', 'Photo & Video'];
 const eventTypes = ['Wedding', 'Quinceañera or Sweet 16', 'Birthday', 'House Warming', 'Portrait Session', 'Family Sessions', 'Engagement', 'Court House Wedding', 'Dance Photography', 'Graduation Ceremony', 'Other Photography services', 'Other Videography Services', 'Mini Session Fall Photography', 'Mini Session Summer Photography', 'Mini Session Senior Photography', 'Mini Session Christmas Photography', 'Mini Session Blue Bonnets Photography', 'Mini Session Dance Photography', 'Mini Session Family Photography', 'Mini Session Couples Photography', 'Mini Session Maternity Photography', 'Mini Session Newborn Photography', "Mini Session Kid's Photography", 'Mini Session Headshot Photography', 'Mini Session Halloween Photography', 'Mini Session Couples Photography', 'Mini Session Fashion Photography', 'Mini Session Model Photography', 'Mini Session Other Photography', 'Product Photography', 'Product Videography', 'Other (Not in List)'];

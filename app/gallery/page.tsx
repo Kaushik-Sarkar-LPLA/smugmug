@@ -1,13 +1,15 @@
 import { SiteShell, PageHero } from '@/components/SiteShell';
 import { BrowseGrid } from '@/components/gallery/BrowseGrid';
 import { getPublicBrowse } from '@/lib/admin/library-store';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Gallery - Pixilens Photography',
-  description: 'Browse Pixilens photography folders and galleries.',
-};
+export const metadata = buildMetadata({
+  title: 'Photo Gallery',
+  description: 'Browse Pixilens Photography folders and galleries — Austin, Dallas, and Houston event and portrait work.',
+  path: '/gallery',
+});
 
 export default async function GalleryIndexPage() {
   const { folders, galleries } = await getPublicBrowse('');

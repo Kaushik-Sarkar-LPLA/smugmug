@@ -2,10 +2,13 @@ import { redirect } from 'next/navigation';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
 import { field, htmlEscape, sendPixilensEmail } from '@/lib/email';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Release Agreement - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Release Agreement',
+  description: 'Photography and videography release agreement for Pixilens Photography clients in Austin, Dallas, Houston, and Texas.',
+  path: '/Release-Agreement',
+});
 
 const releaseAgreement = `STANDARD PHOTOGRAPHY, VIDEOGRAPHY, AND DIGITAL MEDIA RELEASE AGREEMENT
 

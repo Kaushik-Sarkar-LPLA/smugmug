@@ -1,10 +1,13 @@
 import { ContactIcon } from '@/components/ContactIcon';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Contact us - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Contact Us',
+  description: 'Contact Pixilens Photography — Austin, Dallas, and Houston photographer. Call, WhatsApp, or email to book your session.',
+  path: '/Direct-Message',
+});
 
 const contactActions = [
   { label: 'Contact us', href: contact.honeybookHref },

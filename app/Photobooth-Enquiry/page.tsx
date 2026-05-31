@@ -4,10 +4,13 @@ import { contact } from '@/lib/site-content';
 import { field, formatRows, sendPixilensEmail } from '@/lib/email';
 import { buildCalendarInvite, parseDurationMinutes, resolveEventTimezone } from '@/lib/calendar';
 import { PhotoboothRentalForm } from './PhotoboothRentalForm';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Photo Booth Rental - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Photo Booth Rental',
+  description: 'Rent a photobooth in Austin, Dallas, or Houston — iPad booths, 360 video booths, and video guestbooks by Pixilens.',
+  path: '/Photobooth-Enquiry',
+});
 
 const agreementText = `I. THE PARTIES
 This Photo Booth Contract (“Agreement”) is between the client submitting this form and Photo Booth Provider: Pixilens Photography, Sole proprietor Priyanka Sarkar.

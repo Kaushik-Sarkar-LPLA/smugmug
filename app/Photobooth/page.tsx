@@ -1,10 +1,13 @@
 import Image from 'next/image';
 import { PageHero, SiteShell } from '@/components/SiteShell';
 import { contact } from '@/lib/site-content';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Photobooth - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Photobooth',
+  description: 'Photobooth rental in Austin, Dallas, and Houston — digital iPad booths, 360 video booths, and on-site event experiences.',
+  path: '/Photobooth',
+});
 
 const experiences = [
   {

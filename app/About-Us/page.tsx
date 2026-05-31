@@ -1,13 +1,16 @@
 import { AboutIcon } from '@/components/AboutIcon';
 import { PageHero, SiteShell } from '@/components/SiteShell';
-import { contact } from '@/lib/site-content';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'About Us - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'About Us',
+  description:
+    'Meet Pixilens Photography — Austin-based photographers serving Dallas, Houston, and Texas with weddings, portraits, fashion, dance, and event coverage.',
+  path: '/About-Us',
+});
 
 const paragraphs = [
-  'We specialize in fashion & product photography, dance photography, family, newborn, and kids portraits to capture the perfect moment.',
+  'We specialize in fashion & product photography, dance photography, family, newborn, and kids portraits to capture the perfect moment — serving clients in Austin, Dallas, Houston, and throughout Texas.',
   'From the shores of New Jersey to the beaches of California and beyond, we will be there with you every step of the way to guarantee your special moments are captured for all time. To us photography is all about being real and then letting us portray a picture of that moment to remember it forever.',
   'The thing that matters most: real people, real stories, real moments. We are a team of photographers, graphic designers, and retouchers who work with us on any given day.',
   'We would love to reach with you by phone or in person and talk about your wedding, event, portrait session, or video project.',

@@ -3,6 +3,7 @@ import { PageHero, SiteShell } from '@/components/SiteShell';
 import GalleryGrid from '@/components/GalleryGrid';
 import { mediaImageUrl, mediaThumbUrl } from '@/lib/media-url';
 import { findPortfolioGallery, getPortfolioGalleries } from '@/lib/portfolio-db';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   let gallery: Awaited<ReturnType<typeof findPortfolioGallery>> = null;
   try { gallery = await findPortfolioGallery(slug); } catch {}
-  return { title: `${gallery?.title ?? 'Portfolio'} - Pixilens Photography` };
+  return buildMetadata({
+    title: gallery?.title ?? 'Portfolio',
+    description: gallery
+      ? `${gallery.title} photography gallery by Pixilens — Austin, Dallas, and Houston photographer.`
+      : undefined,
+    path: `/Pixilens-Portfolio/${slug}`,
+  });
 }
 
 export default async function PortfolioGalleryPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import { SiteShell } from '@/components/SiteShell';
 import { getPortfolioGalleries } from '@/lib/portfolio-db';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
-export const metadata = {
-  title: 'Portfolio - Pixilens Photography',
-};
+export const metadata = buildMetadata({
+  title: 'Portfolio',
+  description:
+    'Browse wedding, portrait, dance, fashion, and event photography portfolios from Pixilens — Austin, Dallas, and Houston photographer.',
+  path: '/Pixilens-Portfolio',
+});
 
 export default async function PortfolioPage() {
   let galleries: Awaited<ReturnType<typeof getPortfolioGalleries>> = [];
