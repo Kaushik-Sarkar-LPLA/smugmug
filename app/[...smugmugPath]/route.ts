@@ -13,7 +13,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if (!destination) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  return NextResponse.redirect(new URL(destination, request.url), 308);
+  const redirectUrl = new URL(destination, request.nextUrl);
+  return NextResponse.redirect(redirectUrl, 308);
 }
 
 export async function HEAD(request: NextRequest, context: RouteContext) {
