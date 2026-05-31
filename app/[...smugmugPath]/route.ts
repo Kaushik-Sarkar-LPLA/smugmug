@@ -14,6 +14,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
   const redirectUrl = new URL(destination, request.nextUrl);
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || redirectUrl.protocol.replace(':', '');
+  if (host) {
+    redirectUrl.protocol = `${proto}:`;
+    redirectUrl.host = host.split(',')[0].trim();
+  }
   return NextResponse.redirect(redirectUrl, 308);
 }
 
