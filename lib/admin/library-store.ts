@@ -830,8 +830,71 @@ export async function getPublicGalleryBySlug(slug: string): Promise<GalleryRecor
 }
 
 export async function getFolderByUrlPath(urlPath: string): Promise<FolderRecord | null> {
-  const folders = await getFoldersForAdmin();
-  return folders.find((folder) => folder.urlPath === urlPath) || null;
+  const { legacyPathVariants } = await import('@/lib/legacy-path');
+  const variants = legacyPathVariants(urlPath);
+  if (!hasDatabase()) {
+    const folders = await getFoldersForAdmin();
+    return folders.find((folder) => variants.includes(folder.urlPath || '') && isPublicFolderRecord(folder)) || null;
+  }
+  try {
+    await ensureDatabase();
+    const res = await getPool().query(
+      `SELECT * FROM ${qname('folders')} WHERE url_path = ANY($1) AND ${PUBLIC_FOLDER_WHERE} LIMIT 1`,
+      [variants],
+    );
+    return res.rowCount ? folderFromRow(res.rows[0]) : null;
+  } catch {
+    const folders = await getFoldersForAdmin();
+    return folders.find((folder) => variants.includes(folder.urlPath || '') && isPublicFolderRecord(folder)) || null;
+  }
+}
+
+export async function getGalleryByUrlPath(urlPath: string): Promise<GalleryRecord | null> {
+  const { legacyPathVariants } = await import('@/lib/legacy-path');
+  const variants = legacyPathVariants(urlPath);
+  if (!hasDatabase()) {
+    const galleries = await getGalleriesForAdmin();
+    return galleries.find((gallery) => variants.includes(gallery.urlPath || '') && isPublicGalleryRecord(gallery)) || null;
+  }
+  try {
+    await ensureDatabase();
+    const res = await getPool().query(
+      `SELECT * FROM ${qname('galleries')} WHERE url_path = ANY($1) AND ${PUBLIC_GALLERY_WHERE} LIMIT 1`,
+      [variants],
+    );
+    return res.rowCount ? galleryFromRow(res.rows[0]) : null;
+  } catch {
+    const galleries = await getGalleriesForAdmin();
+    return galleries.find((gallery) => variants.includes(gallery.urlPath || '') && isPublicGalleryRecord(gallery)) || null;
+  }
+}
+
+export async function getMediaByUrlPath(urlPath: string): Promise<MediaRecord | null> {
+  const { legacyPathVariants } = await import('@/lib/legacy-path');
+  const variants = legacyPathVariants(urlPath);
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return (
+      store.media.find(
+        (item) =>
+          variants.includes(item.urlPath || '') &&
+          item.visibility !== 'private' &&
+          (item.migrationStatus === 'done' ||
+            item.migrationStatus === 'done_with_local_original' ||
+            item.migrationStatus === undefined),
+      ) || null
+    );
+  }
+  try {
+    await ensureDatabase();
+    const res = await getPool().query(
+      `SELECT * FROM ${qname('media')} WHERE url_path = ANY($1) AND ${PUBLIC_MEDIA_WHERE} LIMIT 1`,
+      [variants],
+    );
+    return res.rowCount ? rowToMediaRecord(res.rows[0]) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getPublicGalleriesForFolder(folderId: string): Promise<GalleryRecord[]> {
