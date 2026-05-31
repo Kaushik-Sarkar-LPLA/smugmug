@@ -29,7 +29,7 @@ export default async function Home() {
       <section className="relative min-h-[100svh] overflow-hidden">
         <HeroSlideshow slides={heroSlides} duration={config.slideDurationSeconds} />
         <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-black/10 to-[#fbfaf7]/92" />
-        <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center px-5 pb-20 pt-28 md:px-8 md:pt-32">
+        <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col items-center justify-start px-5 pb-24 pt-48 sm:pt-52 md:justify-center md:px-8 md:pb-20 md:pt-56 lg:pt-60">
           <div className="mx-auto w-full max-w-3xl text-center">
             <p className="mb-5 text-balance text-xs uppercase tracking-[0.28em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)] sm:tracking-[0.38em]">
               Photography • Video • Live Streaming • Photobooth
