@@ -1,6 +1,8 @@
 # SmugMug to self-hosted Pixilens migration plan
 
-> **Current status:** Read [`STATUS.md`](./STATUS.md) first — it has live migration progress, resume commands, audit results, and deployment state. This file is the long-term plan; `STATUS.md` is updated each session.
+> **Current status:** Read [`STATUS.md`](./STATUS.md) first — it has live migration progress, resume commands, audit results, and deployment state.  
+> **Deploy/upload failures:** Read [`DEPLOYMENT.md`](./DEPLOYMENT.md) for known Coolify, IMGBB, and build issues.  
+> This file is the long-term plan; `STATUS.md` is updated each session.
 
 ## Context
 

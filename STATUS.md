@@ -1,6 +1,6 @@
 # SmugMug Migration — Status
 
-**Last updated:** 2026-05-31 (UTC)  
+**Last updated:** 2026-05-31 (UTC, deploy notes added)  
 **Repo:** `/Users/kauushiksarkar/MacGithub/smugmug` → `https://github.com/pixilensphoto-tech/smugmug`  
 **Server:** `ssh priyanka`  
 **Migrator path:** `/home/priyanka/pixilens-smugmug-migrator`  
@@ -36,6 +36,8 @@ Exits **0** only if SmugMug eligible content matches DB (skipped `/Automatic-iOS
 ### 4. Deploy app after migration milestones
 
 See [Deployment Flow](#deployment-flow) below. Always deploy both priyanka + Azure Coolify apps.
+
+**If deploy or upload fails:** read [`DEPLOYMENT.md`](./DEPLOYMENT.md) — known Coolify/IMGBB/Alpine build failures and fixes.
 
 ---
 
@@ -116,25 +118,27 @@ Oversized originals (>32 MB) are resized with **sharp** (3000px max, quality 85)
 
 ## Deployments
 
-| Site | URL | Coolify app | Status |
-|------|-----|-------------|--------|
-| Priyanka | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | Running |
-| Azure | https://smugmug-az.pixilens.online | `l08cogcggk4oksg0kwwos44k` | Running |
+| Site | URL | How | Latest commit (2026-05-31) |
+|------|-----|-----|----------------------------|
+| Priyanka | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | `accec3c`+ (manual rebuild) |
+| Azure | https://smugmug-az.pixilens.online | Coolify `l08cogcggk4oksg0kwwos44k` | `52a4375` (webpack build fix) |
 
 Admin (both sites, login required):
 
+- https://smugmug.pixilens.online/admin/media
 - https://smugmug-az.pixilens.online/admin/galleries
-- https://smugmug-az.pixilens.online/admin/media
+
+### Troubleshooting
+
+**→ [`DEPLOYMENT.md`](./DEPLOYMENT.md)** — IMGBB missing, Coolify Dockerfile parse errors, Turbopack/Alpine build failures, env sync issues, upload 500s, priyanka vs Azure drift.
 
 ### Recent app features (deployed)
 
-- Admin galleries paginated table (573+ galleries)
-- Portrait thumbnails, reorder (↑/↓), set cover image
-- Portfolio uses DB cover + sort order
-- Booking/photobooth forms attach `.ics` calendar invites
-- Booking form has Event Time field
-
-Latest app commits at last doc update: `f6921fd` (worker resume), `b57661c` (booking form).
+- Hero spacing fix, Fashion portfolio redirect (`/Lifestyle` → `pixilens-portfolio-lifestyle`)
+- Admin upload: ImgBB compression + resilient retries; `insertMediaRecord` (no full-library rewrite)
+- IMGBB + DB env on Coolify local app `a4gcggkck44cokoc08os84sw`
+- Gallery browse: covers, lightbox, download; hide Automatic iOS Uploads
+- Admin galleries paginated; portfolio DB-backed covers
 
 ---
 
@@ -192,6 +196,7 @@ ssh priyanka "wc -l /home/priyanka/pixilens-smugmug-admin/failed-migration-repor
 ```
 smugmug/
 ├── STATUS.md                         ← THIS FILE — current state, read first
+├── DEPLOYMENT.md                     ← Deploy failures, IMGBB, Coolify, env fixes
 ├── MIGRATION.md                      ← Full migration plan
 ├── compare-audit-report.json         ← Last audit (62 missing galleries snapshot)
 ├── scripts/
