@@ -37,13 +37,13 @@ export default async function PortfolioPage() {
 
 function PortfolioCard({ gallery }: { gallery: Awaited<ReturnType<typeof getPortfolioGalleries>>[0] }) {
   return (
-    <Link key={gallery.id} href={`/Pixilens-Portfolio/${gallery.slug}`} className="glass-panel group relative overflow-hidden rounded-xl active:scale-[0.98] transition-transform">
-      <div className="relative aspect-[3/4] bg-white/60">
+    <Link key={gallery.id} href={`/Pixilens-Portfolio/${gallery.slug}`} className="media-card group relative active:scale-[0.98] transition-transform">
+      <div className="media-card__frame aspect-[3/4]">
         {gallery.coverUrl ? (
           <img
             src={gallery.coverUrl}
             alt={gallery.title}
-            className="image-loading h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
+            className="opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
             loading="lazy"
           />
         ) : null}

@@ -20,8 +20,8 @@ export function BrowseGrid({
   return (
     <>
       {folders.map((folder) => (
-        <Link key={folder.id} href={`/folders/${folder.slug}`} className="glass-panel group overflow-hidden rounded-xl">
-          <div className="relative aspect-[4/3] overflow-hidden bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(214,181,109,0.18))]">
+        <Link key={folder.id} href={`/folders/${folder.slug}`} className="media-card group">
+          <div className="media-card__frame aspect-[4/3]">
             <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6">
@@ -36,8 +36,8 @@ export function BrowseGrid({
       ))}
 
       {galleries.map((gallery) => (
-        <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="glass-panel group overflow-hidden rounded-xl">
-          <div className="relative aspect-[3/4] overflow-hidden bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(214,181,109,0.18))]">
+        <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="media-card group">
+          <div className="media-card__frame aspect-[3/4]">
             <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6">

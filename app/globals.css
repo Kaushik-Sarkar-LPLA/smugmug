@@ -41,6 +41,40 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   backdrop-filter: blur(18px) saturate(125%);
 }
 
+/* Photo browse / portfolio cards — image fills edge-to-edge, no glass frame */
+.media-card {
+  display: block;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 60px rgba(71, 52, 24, 0.14);
+  transition: box-shadow 300ms ease, transform 300ms ease;
+}
+
+.media-card:hover {
+  box-shadow: 0 26px 70px rgba(71, 52, 24, 0.18);
+}
+
+.media-card__frame {
+  position: relative;
+  overflow: hidden;
+  background: #e8e2d8;
+}
+
+.media-card__frame > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.media-card .image-loading,
+.media-card.image-loading,
+.media-card__frame.image-loading {
+  border: none;
+}
+
 .gold-text { color: var(--gold); }
 
 .glass-button {

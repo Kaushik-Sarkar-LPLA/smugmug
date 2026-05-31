@@ -40,12 +40,12 @@ export default function GalleryGrid({ images }: { images: GalleryImage[] }) {
             key={image.id}
             type="button"
             onClick={() => openLightbox(index)}
-            className={`group relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-white/60 shadow-[0_8px_30px_rgba(71,52,24,0.10)] transition-shadow ${loadedMap.has(image.id) ? '' : 'image-loading'} hover:shadow-[0_12px_40px_rgba(71,52,24,0.18)]`}
+            className={`media-card group relative aspect-[3/4] w-full text-left ${loadedMap.has(image.id) ? '' : 'image-loading'}`}
           >
             <img
               src={image.url}
               alt={image.title}
-              className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+              className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
               loading="lazy"
               onLoad={() => setLoadedMap((prev) => new Set(prev).add(image.id))}
             />
