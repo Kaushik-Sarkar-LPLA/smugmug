@@ -101,6 +101,30 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   transform: translateY(-1px);
 }
 
+.glass-button-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.8rem 1.45rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px) saturate(120%);
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.glass-button-hero:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 .admin-button {
   display: inline-flex;
   align-items: center;

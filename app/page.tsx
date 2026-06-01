@@ -76,8 +76,8 @@ export default async function Home() {
             <span className="typewriter">Austin, Dallas, and Houston Texas photographer and videographer for portraits, events, fashion, products, dance, weddings, live streaming, and photobooth experiences.</span>
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <Link href="/Services-and-Pricing" className="glass-button">Services</Link>
-            <Link href="/Get-Started" className="glass-button">Get Started</Link>
+            <Link href="/Services-and-Pricing" className="glass-button-hero">Services</Link>
+            <Link href="/Get-Started" className="glass-button-hero">Get Started</Link>
           </div>
         </div>
       </HomeHeroSection>
