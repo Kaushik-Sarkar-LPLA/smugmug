@@ -193,9 +193,11 @@ awk -F= '/^IMGBB_API_KEY=/{if(seen++) next} {print}' .env > .env.tmp && mv .env.
 | `MS_GRAPH_*` | Form email (booking, etc.) |
 | `ADMIN_DATA_DIR` / `MEDIA_ROOT` | Local media + homepage config (set in `docker run -e`) |
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for sitemap, Open Graph, and JSON-LD (e.g. `https://smugmug.pixilens.online`; use `https://pixilens.com` after domain cutover) |
+| `GA4_MEASUREMENT_ID` | Google Analytics 4 measurement ID (`G-…`); runtime env, replaces SmugMug `UA-93000127-1` |
+| `GOOGLE_SITE_VERIFICATION` | Search Console HTML meta verification token |
 | `ALLOW_SEARCH_INDEXING` | Set to `false` on private staging to block Google (`noindex`). Omit or `true` on production. |
 
-After enabling indexing, verify `https://YOUR-DOMAIN/robots.txt` and submit `https://YOUR-DOMAIN/sitemap.xml` in [Google Search Console](https://search.google.com/search-console).
+After enabling indexing, verify `https://YOUR-DOMAIN/robots.txt` and submit `https://YOUR-DOMAIN/sitemap.xml` in [Google Search Console](https://search.google.com/search-console). Full setup: [`GOOGLE-ANALYTICS-SEO.md`](./GOOGLE-ANALYTICS-SEO.md).
 
 **Azure Coolify** also needs base64 **`SSL_CA`**, **`SSL_CERT`**, **`SSL_KEY`** (already configured).  
 **Do not commit** secrets to git.

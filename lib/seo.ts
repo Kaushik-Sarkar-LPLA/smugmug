@@ -75,12 +75,14 @@ export function buildMetadata({
   const url = `${siteUrl()}${path.startsWith('/') ? path : path ? `/${path}` : ''}`;
   const desc = description || defaultDescription();
   const indexable = !noIndex && allowSearchIndexing();
+  const googleVerification = (process.env.GOOGLE_SITE_VERIFICATION || '').trim();
 
   return {
     title: title ? pageTitle(title) : pageTitle(),
     description: desc,
     keywords: (keywords || seoKeywords).join(', '),
     alternates: { canonical: url },
+    ...(googleVerification ? { verification: { google: googleVerification } } : {}),
     robots: indexable
       ? { index: true, follow: true, googleBot: { index: true, follow: true } }
       : { index: false, follow: false, googleBot: { index: false, follow: false } },

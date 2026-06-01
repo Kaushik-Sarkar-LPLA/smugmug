@@ -829,6 +829,40 @@ export async function getPublicGalleryBySlug(slug: string): Promise<GalleryRecor
   return gallery;
 }
 
+export async function getPublicSitemapSlugs(): Promise<{
+  galleries: { slug: string; updatedAt: string }[];
+  folders: { slug: string; updatedAt: string }[];
+}> {
+  if (!hasDatabase()) {
+    const store = await getLibraryFromJson();
+    return {
+      galleries: store.galleries
+        .filter(isPublicGalleryRecord)
+        .map((gallery) => ({ slug: gallery.slug, updatedAt: gallery.updatedAt || '' })),
+      folders: store.folders
+        .filter(isPublicFolderRecord)
+        .map((folder) => ({ slug: folder.slug, updatedAt: folder.updatedAt || '' })),
+    };
+  }
+
+  try {
+    await ensureDatabase();
+    const db = getPool();
+    const [galleriesRes, foldersRes] = await Promise.all([
+      db.query(`SELECT slug, updated_at FROM ${qname('galleries')} WHERE ${PUBLIC_GALLERY_WHERE} ORDER BY slug`),
+      db.query(`SELECT slug, updated_at FROM ${qname('folders')} WHERE ${PUBLIC_FOLDER_WHERE} ORDER BY slug`),
+    ]);
+    const toIso = (value: unknown) =>
+      value instanceof Date ? value.toISOString() : value ? String(value) : '';
+    return {
+      galleries: galleriesRes.rows.map((row) => ({ slug: row.slug, updatedAt: toIso(row.updated_at) })),
+      folders: foldersRes.rows.map((row) => ({ slug: row.slug, updatedAt: toIso(row.updated_at) })),
+    };
+  } catch {
+    return { galleries: [], folders: [] };
+  }
+}
+
 export async function getFolderByUrlPath(urlPath: string): Promise<FolderRecord | null> {
   const { legacyPathVariants } = await import('@/lib/legacy-path');
   const variants = legacyPathVariants(urlPath);
