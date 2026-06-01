@@ -27,6 +27,7 @@ data/raw/
 # migrated media
 public/media/
 /media/
+hero-images/
 
 # logs
 *.log
