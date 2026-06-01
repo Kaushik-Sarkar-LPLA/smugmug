@@ -247,15 +247,6 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   100% { transform: scaleX(1); }
 }
 
-.hero-active-slide {
-  animation: hero-active-slide var(--slide-duration, 5s) ease-out forwards;
-}
-
-@keyframes hero-active-slide {
-  from { transform: scale(1) translateX(0); }
-  to { transform: scale(1.08) translateX(-1%); }
-}
-
 @keyframes image-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

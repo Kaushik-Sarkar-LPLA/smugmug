@@ -6,7 +6,7 @@ import type { HomepageItem } from '@/lib/admin/homepage-config';
 import { homepageHeroFullSrc, homepageHeroIsWebOptimized } from '@/lib/homepage-images';
 import { HERO_IMAGE_QUALITY, heroImageSizes, heroPreloadSrc } from '@/lib/hero-image-url';
 
-const CROSSFADE_MS = 700;
+const CROSSFADE_MS = 900;
 
 function preloadImage(url: string) {
   if (!url) return;
@@ -17,24 +17,17 @@ function preloadImage(url: string) {
 function HeroSlideImage({
   slide,
   priority,
-  kenBurns,
-  opacity,
+  visible,
   onLoaded,
 }: {
   slide: HomepageItem;
   priority: boolean;
-  kenBurns: boolean;
-  opacity: number;
+  visible: boolean;
   onLoaded: () => void;
 }) {
   const fullSrc = homepageHeroFullSrc(slide);
   const directSrc = homepageHeroIsWebOptimized(slide);
-  const className = `absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${kenBurns ? 'hero-active-slide' : ''}`;
-
-  const style = {
-    objectPosition: slide.objectPosition,
-    opacity,
-  };
+  const className = `absolute inset-0 h-full w-full object-cover transition-opacity duration-[900ms] ease-in-out ${visible ? 'opacity-100' : 'opacity-0'}`;
 
   if (directSrc) {
     return (
@@ -45,7 +38,7 @@ function HeroSlideImage({
         fetchPriority={priority ? 'high' : 'auto'}
         decoding="async"
         className={className}
-        style={style}
+        style={{ objectPosition: slide.objectPosition }}
         onLoad={onLoaded}
       />
     );
@@ -61,7 +54,7 @@ function HeroSlideImage({
       sizes={heroImageSizes}
       quality={HERO_IMAGE_QUALITY}
       className={className}
-      style={style}
+      style={{ objectPosition: slide.objectPosition }}
       onLoad={onLoaded}
     />
   );
@@ -79,7 +72,7 @@ export function HeroSlideshow({
   const items = useMemo(() => slides.filter(Boolean), [slides]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [previousIndex, setPreviousIndex] = useState<number | null>(null);
-  const [crossfading, setCrossfading] = useState(false);
+  const [showIncoming, setShowIncoming] = useState(true);
   const [progressKey, setProgressKey] = useState(0);
   const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
   const fadeTimerRef = useRef<number | undefined>(undefined);
@@ -98,7 +91,7 @@ export function HeroSlideshow({
   useEffect(() => {
     setActiveIndex(0);
     setPreviousIndex(null);
-    setCrossfading(false);
+    setShowIncoming(true);
     setProgressKey(0);
     setLoadedIds(new Set());
   }, [items]);
@@ -140,23 +133,20 @@ export function HeroSlideshow({
 
     window.clearTimeout(fadeTimerRef.current);
     setPreviousIndex(activeIndexRef.current);
-    setCrossfading(false);
+    setShowIncoming(false);
     setActiveIndex((index) => (index + 1) % items.length);
     setProgressKey((key) => key + 1);
 
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => setCrossfading(true));
+      requestAnimationFrame(() => setShowIncoming(true));
     });
 
     fadeTimerRef.current = window.setTimeout(() => {
       setPreviousIndex(null);
-      setCrossfading(false);
     }, CROSSFADE_MS);
   }, [items.length]);
 
-  useEffect(() => {
-    return () => window.clearTimeout(fadeTimerRef.current);
-  }, []);
+  useEffect(() => () => window.clearTimeout(fadeTimerRef.current), []);
 
   useEffect(() => {
     if (!autoplay || items.length <= 1) return;
@@ -169,9 +159,7 @@ export function HeroSlideshow({
   }
 
   const activeSlide = items[activeIndex];
-  const previousSlide = previousIndex !== null ? items[previousIndex] : null;
   const firstReady = Boolean(activeSlide && loadedIds.has(activeSlide.id));
-
   const renderIndices = previousIndex !== null ? [previousIndex, activeIndex] : [activeIndex];
 
   return (
@@ -184,13 +172,10 @@ export function HeroSlideshow({
         const isPrevious = index === previousIndex;
         const loaded = loadedIds.has(slide.id);
 
-        let opacity = 0;
+        let visible = false;
         if (loaded) {
-          if (!isPrevious) {
-            opacity = crossfading || previousIndex === null ? 1 : 0;
-          } else {
-            opacity = crossfading ? 0 : 1;
-          }
+          if (isActive) visible = previousIndex === null || showIncoming;
+          if (isPrevious) visible = !showIncoming;
         }
 
         return (
@@ -202,8 +187,7 @@ export function HeroSlideshow({
             <HeroSlideImage
               slide={slide}
               priority={index <= 2}
-              kenBurns={isActive && (crossfading || previousIndex === null)}
-              opacity={opacity}
+              visible={visible}
               onLoaded={() => markLoaded(slide.id)}
             />
           </div>
