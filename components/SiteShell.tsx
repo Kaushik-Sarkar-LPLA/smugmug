@@ -16,7 +16,7 @@ export function SiteHeader({ floating = false }: { floating?: boolean }) {
             <span className="text-3xl font-light tracking-[0.28em]">PIXILENS</span>
           )}
         </Link>
-        <PublicNav />
+        <PublicNav floating={floating} />
       </div>
     </header>
   );
