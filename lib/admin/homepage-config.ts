@@ -60,9 +60,12 @@ function defaultConfig(): HomepageConfig {
 function mergeDefaults(config: HomepageConfig) {
   const defaults = defaultConfig();
   const byId = new Map(config.items.map((item) => [item.id, item]));
+  const defaultIds = new Set(defaults.items.map((item) => item.id));
+  const mergedDefaults = defaults.items.map((item) => ({ ...item, ...byId.get(item.id) }));
+  const extraItems = config.items.filter((item) => !defaultIds.has(item.id));
   return {
     slideDurationSeconds: config.slideDurationSeconds || defaults.slideDurationSeconds,
-    items: defaults.items.map((item) => ({ ...item, ...byId.get(item.id) })).sort((a, b) => a.sortOrder - b.sortOrder),
+    items: [...mergedDefaults, ...extraItems].sort((a, b) => a.sortOrder - b.sortOrder),
   };
 }
 
