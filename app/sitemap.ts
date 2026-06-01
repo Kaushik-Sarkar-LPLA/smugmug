@@ -4,6 +4,8 @@ import { portfolioLinks } from '@/lib/site-content';
 import { getPortfolioGalleries } from '@/lib/portfolio-db';
 import { publicSitemapPaths, siteUrl } from '@/lib/seo';
 
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const now = new Date();
