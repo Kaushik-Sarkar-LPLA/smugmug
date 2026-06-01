@@ -1,15 +1,70 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { HomepageItem } from '@/lib/admin/homepage-config';
 import { homepageHeroFullSrc, homepageHeroIsWebOptimized } from '@/lib/homepage-images';
 import { HERO_IMAGE_QUALITY, heroImageSizes, heroPreloadSrc } from '@/lib/hero-image-url';
+
+const CROSSFADE_MS = 700;
 
 function preloadImage(url: string) {
   if (!url) return;
   const img = new window.Image();
   img.src = url;
+}
+
+function HeroSlideImage({
+  slide,
+  priority,
+  kenBurns,
+  opacity,
+  onLoaded,
+}: {
+  slide: HomepageItem;
+  priority: boolean;
+  kenBurns: boolean;
+  opacity: number;
+  onLoaded: () => void;
+}) {
+  const fullSrc = homepageHeroFullSrc(slide);
+  const directSrc = homepageHeroIsWebOptimized(slide);
+  const className = `absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${kenBurns ? 'hero-active-slide' : ''}`;
+
+  const style = {
+    objectPosition: slide.objectPosition,
+    opacity,
+  };
+
+  if (directSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={fullSrc}
+        alt=""
+        fetchPriority={priority ? 'high' : 'auto'}
+        decoding="async"
+        className={className}
+        style={style}
+        onLoad={onLoaded}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={fullSrc}
+      alt=""
+      fill
+      priority={priority}
+      loading={priority ? 'eager' : 'lazy'}
+      sizes={heroImageSizes}
+      quality={HERO_IMAGE_QUALITY}
+      className={className}
+      style={style}
+      onLoad={onLoaded}
+    />
+  );
 }
 
 export function HeroSlideshow({
@@ -23,15 +78,16 @@ export function HeroSlideshow({
 }) {
   const items = useMemo(() => slides.filter(Boolean), [slides]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [previousIndex, setPreviousIndex] = useState<number | null>(null);
+  const [crossfading, setCrossfading] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
-  const [fullLoadedIds, setFullLoadedIds] = useState<Set<string>>(() => new Set());
+  const [loadedIds, setLoadedIds] = useState<Set<string>>(() => new Set());
+  const fadeTimerRef = useRef<number | undefined>(undefined);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
 
-  const activeSlide = items[activeIndex] || null;
-  const nextIndex = items.length ? (activeIndex + 1) % items.length : 0;
-  const nextSlide = items[nextIndex] || null;
-
-  const markFullLoaded = useCallback((id: string) => {
-    setFullLoadedIds((current) => {
+  const markLoaded = useCallback((id: string) => {
+    setLoadedIds((current) => {
       if (current.has(id)) return current;
       const next = new Set(current);
       next.add(id);
@@ -41,64 +97,101 @@ export function HeroSlideshow({
 
   useEffect(() => {
     setActiveIndex(0);
+    setPreviousIndex(null);
+    setCrossfading(false);
     setProgressKey(0);
-    setFullLoadedIds(new Set());
+    setLoadedIds(new Set());
   }, [items]);
 
   useEffect(() => {
     if (!items.length) return;
-    const warm = [items[0], items[1], items[2], activeSlide, nextSlide].filter(Boolean) as HomepageItem[];
+    const count = items.length;
+    const warm = new Set<number>([
+      activeIndex,
+      (activeIndex + 1) % count,
+      (activeIndex - 1 + count) % count,
+      0,
+      1,
+      2,
+    ]);
     const seen = new Set<string>();
-    for (const slide of warm) {
+    for (const index of warm) {
+      const slide = items[index];
       const url = heroPreloadSrc(slide);
       if (url && !seen.has(url)) {
         seen.add(url);
         preloadImage(url);
       }
     }
-  }, [items, activeSlide, nextSlide]);
+  }, [items, activeIndex]);
 
   useEffect(() => {
-    if (!items.length) return;
-    for (const slide of items.slice(0, 3)) {
+    for (const slide of items.slice(0, 6)) {
       const url = heroPreloadSrc(slide);
       if (!url) continue;
       const img = new window.Image();
       img.src = url;
-      if (img.complete && img.naturalWidth > 0) {
-        markFullLoaded(slide.id);
-      }
+      if (img.complete && img.naturalWidth > 0) markLoaded(slide.id);
     }
-  }, [items, markFullLoaded]);
+  }, [items, markLoaded]);
+
+  const advanceSlide = useCallback(() => {
+    if (items.length <= 1) return;
+
+    window.clearTimeout(fadeTimerRef.current);
+    setPreviousIndex(activeIndexRef.current);
+    setCrossfading(false);
+    setActiveIndex((index) => (index + 1) % items.length);
+    setProgressKey((key) => key + 1);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setCrossfading(true));
+    });
+
+    fadeTimerRef.current = window.setTimeout(() => {
+      setPreviousIndex(null);
+      setCrossfading(false);
+    }, CROSSFADE_MS);
+  }, [items.length]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(fadeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!autoplay || items.length <= 1) return;
-    const timer = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % items.length);
-      setProgressKey((key) => key + 1);
-    }, duration * 1000);
+    const timer = window.setInterval(advanceSlide, duration * 1000);
     return () => window.clearInterval(timer);
-  }, [autoplay, duration, items.length]);
+  }, [autoplay, duration, items.length, advanceSlide]);
 
   if (!items.length) {
     return <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />;
   }
 
-  const firstReady = Boolean(activeSlide && fullLoadedIds.has(activeSlide.id));
+  const activeSlide = items[activeIndex];
+  const previousSlide = previousIndex !== null ? items[previousIndex] : null;
+  const firstReady = Boolean(activeSlide && loadedIds.has(activeSlide.id));
+
+  const renderIndices = previousIndex !== null ? [previousIndex, activeIndex] : [activeIndex];
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ '--slide-duration': `${duration}s` } as React.CSSProperties}>
       <div className="absolute inset-0 bg-[linear-gradient(115deg,#111,#3d3122,#111)]" />
 
-      {items.map((slide, index) => {
+      {renderIndices.map((index) => {
+        const slide = items[index];
         const isActive = index === activeIndex;
-        const isNext = index === nextIndex;
-        if (!isActive && !isNext) return null;
+        const isPrevious = index === previousIndex;
+        const loaded = loadedIds.has(slide.id);
 
-        const fullSrc = homepageHeroFullSrc(slide);
-        const directSrc = homepageHeroIsWebOptimized(slide);
-        const fullLoaded = fullLoadedIds.has(slide.id);
-        const visibleClass = `object-cover transition-opacity duration-700 ${fullLoaded ? (isActive ? 'hero-active-slide opacity-100' : 'opacity-100') : 'opacity-0'} ${isActive ? 'z-[2]' : 'z-[1]'}`;
+        let opacity = 0;
+        if (loaded) {
+          if (!isPrevious) {
+            opacity = crossfading || previousIndex === null ? 1 : 0;
+          } else {
+            opacity = crossfading ? 0 : 1;
+          }
+        }
 
         return (
           <div
@@ -106,32 +199,13 @@ export function HeroSlideshow({
             className={`absolute inset-0 ${isActive ? 'z-[2]' : 'z-[1]'}`}
             aria-hidden={!isActive}
           >
-            {directSrc ? (
-              // Pre-compressed hero WebP/JPEG — serve directly, no double optimization.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={fullSrc}
-                alt=""
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                decoding="async"
-                className={`absolute inset-0 h-full w-full ${visibleClass}`}
-                style={{ objectPosition: slide.objectPosition }}
-                onLoad={() => markFullLoaded(slide.id)}
-              />
-            ) : (
-              <Image
-                src={fullSrc}
-                alt=""
-                fill
-                priority={index <= 2}
-                loading={index <= 2 ? 'eager' : 'lazy'}
-                sizes={heroImageSizes}
-                quality={HERO_IMAGE_QUALITY}
-                className={visibleClass}
-                style={{ objectPosition: slide.objectPosition }}
-                onLoad={() => markFullLoaded(slide.id)}
-              />
-            )}
+            <HeroSlideImage
+              slide={slide}
+              priority={index <= 2}
+              kenBurns={isActive && (crossfading || previousIndex === null)}
+              opacity={opacity}
+              onLoaded={() => markLoaded(slide.id)}
+            />
           </div>
         );
       })}
