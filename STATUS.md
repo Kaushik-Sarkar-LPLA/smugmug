@@ -1,6 +1,6 @@
 # SmugMug Migration — Status
 
-**Last updated:** 2026-05-31 (UTC, deploy notes added)  
+**Last updated:** 2026-06-14 (UTC) — **pixilens.com is LIVE!**  
 **Repo:** `/Users/kauushiksarkar/MacGithub/smugmug` → `https://github.com/pixilensphoto-tech/smugmug`  
 **Server:** `ssh priyanka`  
 **Migrator path:** `/home/priyanka/pixilens-smugmug-migrator`  
@@ -116,16 +116,33 @@ Oversized originals (>32 MB) are resized with **sharp** (3000px max, quality 85)
 
 ---
 
-## Deployments
+## Live Sites (2026-06-14)
 
-| Site | URL | How | Latest commit (2026-05-31) |
-|------|-----|-----|----------------------------|
-| Priyanka | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | `accec3c`+ (manual rebuild) |
-| Azure | https://smugmug-az.pixilens.online | Coolify `l08cogcggk4oksg0kwwos44k` | `52a4375` (webpack build fix) |
+> ⚠️ **pixilens.com is now PRODUCTION** — cutover complete!
 
-Admin (both sites, login required):
+| Site | URL | Coolify App | Status |
+|------|-----|-------------|--------|
+| **Production** | https://pixilens.com | Same as smugmug-az! | **LIVE** ✅ |
+| **Production** | https://www.pixilens.com | Same as smugmug-az! | **LIVE** ✅ |
+| **Staging** | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | Active |
+| **Azure copy** | https://smugmug-az.pixilens.online | Coolify `l08cogcggk4oksg0kwwos44k` | Active |
 
-- https://smugmug.pixilens.online/admin/media
+### Same Container!
+All three domains (`pixilens.com`, `www.pixilens.com`, `smugmug-az.pixilens.online`) point to **one** Coolify app: `pixilens-smugmug-azure` (`l08cogcggk4oksg0kwwos44k`).
+
+### DNS Status
+
+| Domain | Target | Indexing |
+|--------|--------|----------|
+| `pixilens.com` | Azure IP `9.234.42.243` | `index, follow` (production!) |
+| `smugmug.pixilens.online` | Cloudflare → priyanka | Staging |
+
+### Admin Access
+
+- https://pixilens.com/admin (main production admin)
+- https://smugmug.pixilens.online/admin (staging admin)
+
+Legacy (verify if still needed):
 - https://smugmug-az.pixilens.online/admin/galleries
 
 ### Troubleshooting
@@ -172,6 +189,57 @@ Coolify apps:
 | `pixilens-smugmug` (local) | `a4gcggkck44cokoc08os84sw` |
 
 ---
+
+## Deployment Workflow (Post-Cutover)
+
+> ⚠️ **Deploy is via GitHub push** — Coolify auto-deploys from `main` branch!
+
+### Deploy to production (GitHub push)
+
+```bash
+# 1. Test locally first
+npm run build
+curl -I http://localhost:3000
+
+# 2. Push to GitHub - ALL THREE sites auto-deploy!
+git add . && git commit -m "Your changes" && git push origin main
+
+# Wait ~2-5 minutes for Coolify build + deploy
+# Updates: pixilens.com, www.pixilens.com, smugmug-az.pixilens.online
+```
+
+### Deploy to staging (priyanka Docker - for pre-release testing)
+
+```bash
+ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && \
+  sudo docker build -t pixilens-smugmug:latest . && \
+  sudo docker rm -f smugmug-managed && \
+  sudo docker run -d --name smugmug-managed --restart unless-stopped --network coolify \
+    -p 3010:3000 \
+    --env-file /home/priyanka/pixilens-smugmug-admin/.env \
+    -e MEDIA_ROOT=/admin-data/media -e ADMIN_DATA_DIR=/admin-data \
+    -e NEXT_PUBLIC_SITE_URL=https://smugmug.pixilens.online \
+    -v /home/priyanka/pixilens-smugmug-admin/data:/admin-data \
+    -v /home/priyanka/pixilens-smugmug-admin/certs:/app/certs \
+    --label traefik.enable=true \
+    --label "traefik.http.routers.http-0-smugmug-managed.rule=Host(\`smugmug.pixilens.online\`)" \
+    --label traefik.http.services.http-0-smugmug-managed.loadbalancer.server.port=3000 \
+    pixilens-smugmug:latest'
+```
+
+### Smoke Test Commands
+
+```bash
+# Check both sites respond
+curl -sI https://pixilens.com | head -1
+curl -sI https://smugmug.pixilens.online | head -1
+
+# Check admin works
+curl -sI https://pixilens.com/admin | grep location
+
+# Check specific pages
+curl -sI https://pixilens.com/Pixilens-Portfolio | grep -E '^HTTP'
+```
 
 ## Monitor migration
 

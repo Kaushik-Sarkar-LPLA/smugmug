@@ -9,11 +9,15 @@
 
 ## Sites & how they run
 
-| Site | URL | How it runs | Notes |
+> ⚠️ **Updated 2026-06-14**: `pixilens.com` is now **PRODUCTION**!
+
+| Site | URL | Coolify App | Notes |
 |------|-----|-------------|-------|
-| **Priyanka (primary)** | https://smugmug.pixilens.online | Manual Docker container `smugmug-managed` on port **3010**, Traefik labels | **This is what most users hit.** Rebuild with commands below. |
-| **Azure** | https://smugmug-az.pixilens.online | Coolify app `pixilens-smugmug-azure` | Builds on `Azure-UBKS-Server`. Can lag if Coolify deploy fails. |
-| **Coolify local** | Same FQDN as priyanka in Coolify UI | App `pixilens-smugmug` | Shares domain with manual Docker — env must stay in sync. |
+| **Production** | https://pixilens.com | **Same container as smugmug-az!** | Indexing enabled |
+| **Production** | https://www.pixilens.com | **Same container as smugmug-az!** | Indexing enabled |
+| **Staging** | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | Manual Docker on priyanka. Rebuild with commands below. |
+| **Azure copy** | https://smugmug-az.pixilens.online | Coolify app `pixilens-smugmug-azure` (UUID: `l08cogcggk4oksg0kwwos44k`) | **This IS the production container!** All three URLs go here. |
+| **Coolify local** | `smugmug.pixilens.online` | App `pixilens-smugmug` (`a4gcggkck44cokoc08os84sw`) | May be deprecated — verify. |
 
 ### Coolify app UUIDs
 
@@ -44,7 +48,8 @@ ssh priyanka 'sudo docker ps --filter name=smugmug-managed --format "{{.Status}}
 # Azure Coolify — last deploy status + commit
 ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app deployments list l08cogcggk4oksg0kwwos44k | head -5'
 
-# Smoke test both sites (example: fashion redirect added in accec3c)
+# Smoke test all sites (example: fashion redirect added in accec3c)
+curl -sI https://pixilens.com/Pixilens-Portfolio/Lifestyle | grep -iE '^HTTP|^location'
 curl -sI https://smugmug.pixilens.online/Pixilens-Portfolio/Lifestyle | grep -iE '^HTTP|^location'
 curl -sI https://smugmug-az.pixilens.online/Pixilens-Portfolio/Lifestyle | grep -iE '^HTTP|^location'
 # Expect: HTTP 308 + location: /Pixilens-Portfolio/pixilens-portfolio-lifestyle
@@ -192,7 +197,7 @@ awk -F= '/^IMGBB_API_KEY=/{if(seen++) next} {print}' .env > .env.tmp && mv .env.
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` / `SESSION_SECRET` | Admin auth |
 | `MS_GRAPH_*` | Form email (booking, etc.) |
 | `ADMIN_DATA_DIR` / `MEDIA_ROOT` | Local media + homepage config (set in `docker run -e`) |
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL for sitemap, Open Graph, and JSON-LD (e.g. `https://smugmug.pixilens.online`; use `https://pixilens.com` after domain cutover) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL for sitemap, Open Graph, and JSON-LD — **set to `https://pixilens.com` for production** |
 | `GA4_MEASUREMENT_ID` | Google Analytics 4 measurement ID (`G-…`); runtime env, replaces SmugMug `UA-93000127-1` |
 | `GOOGLE_SITE_VERIFICATION` | Search Console HTML meta verification token |
 | `ALLOW_SEARCH_INDEXING` | Set to `false` on private staging to block Google (`noindex`). Omit or `true` on production. |
@@ -204,9 +209,24 @@ After enabling indexing, verify `https://YOUR-DOMAIN/robots.txt` and submit `htt
 
 ---
 
-## Deploy commands (copy-paste)
+## Deploy commands
 
-### Priyanka — manual Docker (primary site)
+> ⚠️ **Updated 2026-06-14**: Deploy is via **GitHub push** — Coolify auto-deploys!
+
+### Deploy to production (ALL THREE sites!)
+
+```bash
+# Just push to GitHub - Coolify auto-deploys from main branch
+git push origin main
+
+# Wait ~2-5 minutes for build + deploy
+# All three sites update:
+#   https://pixilens.com
+#   https://www.pixilens.com
+#   https://smugmug-az.pixilens.online
+```
+
+### Deploy to staging (priyanka Docker - for testing)
 
 ```bash
 ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && \
@@ -230,19 +250,14 @@ ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only 
     pixilens-smugmug:latest'
 ```
 
-### Azure — Coolify
+### Manual Coolify deploy (if GitHub webhook fails)
 
 ```bash
+# Force redeploy from GitHub
 ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start l08cogcggk4oksg0kwwos44k --force --instant-deploy'
 ```
 
-### Local Coolify app (if used)
-
-```bash
-ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start a4gcggkck44cokoc08os84sw --force --instant-deploy'
-```
-
-After any env change on Coolify, **redeploy** so runtime picks up new values.
+After env changes on Coolify, **redeploy** so runtime picks up new values.
 
 ---
 
