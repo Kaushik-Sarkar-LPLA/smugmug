@@ -203,7 +203,7 @@ async function main() {
     const ext   = path.extname(row.display_url.split('?')[0]) || '.jpg';
     const fname = `${row.id}${ext}`;
     const fpath = path.join(CDN_DIR, fname);
-    const cdnUrl = `${CDN_PUBLIC_URL}/photos/${fname}`;
+    const cdnUrl = `${CDN_PUBLIC_URL}/${fname}`;
 
     try {
       // Skip if already on disk (partial resume)
