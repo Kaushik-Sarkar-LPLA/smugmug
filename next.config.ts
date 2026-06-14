@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'cdn.pixilens.online',
+      },
+      {
+        protocol: 'https',
         hostname: 'i.ibb.co',
       },
       {
