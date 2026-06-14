@@ -3,28 +3,56 @@
 > Read this when a deploy fails, uploads break, or priyanka vs Azure behave differently.  
 > For live migration progress see [`STATUS.md`](./STATUS.md).
 
-**Last updated:** 2026-05-31 (UTC)
+**Last updated:** 2026-06-14 (UTC)
 
 ---
 
 ## Sites & how they run
 
-> ⚠️ **Updated 2026-06-14**: `pixilens.com` is now **PRODUCTION**!
-
-| Site | URL | Coolify App | Notes |
-|------|-----|-------------|-------|
-| **Production** | https://pixilens.com | **Same container as smugmug-az!** | Indexing enabled |
-| **Production** | https://www.pixilens.com | **Same container as smugmug-az!** | Indexing enabled |
-| **Staging** | https://smugmug.pixilens.online | Docker `smugmug-managed` :3010 | Manual Docker on priyanka. Rebuild with commands below. |
-| **Azure copy** | https://smugmug-az.pixilens.online | Coolify app `pixilens-smugmug-azure` (UUID: `l08cogcggk4oksg0kwwos44k`) | **This IS the production container!** All three URLs go here. |
-| **Coolify local** | `smugmug.pixilens.online` | App `pixilens-smugmug` (`a4gcggkck44cokoc08os84sw`) | May be deprecated — verify. |
+| Site | URL | How | Notes |
+|------|-----|-----|-------|
+| **Production** | https://pixilens.com | `smugmug-managed` on priyanka via Cloudflare tunnel | Manual Docker, starts via systemd `pixilens-containers.service` |
+| **Production** | https://www.pixilens.com | Same as above | Same container |
+| **Image CDN** | https://cdn.pixilens.online | `pixilens-cdn` nginx on priyanka via Cloudflare tunnel | Serves display images, Cloudflare-cached globally |
+| **Staging** | https://smugmug.pixilens.online | Same `smugmug-managed` container | Same container, different domain |
+| **Backup** | https://smugmug-az.pixilens.online | Azure Coolify app `l08cogcggk4oksg0kwwos44k` | Backup/staging only, auto-deploys from GitHub |
 
 ### Coolify app UUIDs
 
-| App | UUID |
-|-----|------|
-| `pixilens-smugmug-azure` | `l08cogcggk4oksg0kwwos44k` |
-| `pixilens-smugmug` (local) | `a4gcggkck44cokoc08os84sw` |
+| App | UUID | Domains |
+|-----|------|---------|
+| `pixilens-smugmug` (local/priyanka) | `a4gcggkck44cokoc08os84sw` | smugmug.pixilens.online, pixilens.com, www.pixilens.com |
+| `pixilens-smugmug-azure` (backup) | `l08cogcggk4oksg0kwwos44k` | smugmug-az.pixilens.online |
+
+### DNS
+
+| Domain | DNS | Nameservers |
+|--------|-----|-------------|
+| `pixilens.com` | Cloudflare zone `ad8121673299a8103f1c3f519c4be6de` | dee.ns.cloudflare.com, devin.ns.cloudflare.com |
+| `pixilens.online` | Cloudflare zone `f3d7cc66aae06a642993797bd65bac5d` | Cloudflare |
+
+### Persistence — what survives reboot
+
+| Component | Persistence mechanism |
+|-----------|----------------------|
+| `smugmug-managed` container | `--restart unless-stopped` + `pixilens-containers.service` systemd |
+| `pixilens-cdn` container | `--restart unless-stopped` + `pixilens-containers.service` systemd |
+| `cloudflared` tunnel | `cloudflared.service` systemd (enabled) |
+| `pixilens.com` tunnel route | Coolify app `a4gcggkck44cokoc08os84sw` owns domain — Coolify pushes it to tunnel |
+| CDN images | Stored at `/home/priyanka/pixilens-cdn/photos/` (persistent disk) |
+
+**Startup scripts** (run manually if containers are missing after incident):
+```bash
+# Rebuild app container after code change
+ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && sudo docker build -t pixilens-smugmug:latest .'
+
+# Restart both containers
+ssh priyanka '/home/priyanka/pixilens-smugmug-admin/start-smugmug-managed.sh'
+ssh priyanka '/home/priyanka/pixilens-cdn/start-cdn.sh'
+
+# Or via systemd
+ssh priyanka 'sudo systemctl restart pixilens-containers.service'
+```
 
 Coolify CLI (from priyanka):
 
