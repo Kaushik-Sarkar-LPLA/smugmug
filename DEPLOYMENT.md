@@ -202,7 +202,26 @@ awk -F= '/^IMGBB_API_KEY=/{if(seen++) next} {print}' .env > .env.tmp && mv .env.
 
 ---
 
-### 10. Migration worker stopped mid-run
+### 11. pixilens.com returns 404 after a Coolify deploy
+
+| | |
+|--|--|
+| **Symptom** | `https://pixilens.com` returns 404 (Cloudflare tunnel catch-all) |
+| **Cause** | Coolify pushes its own tunnel config on every deploy, overwriting manually-added routes. |
+| **Fix** | `pixilens.com` is now registered in Coolify app `a4gcggkck44cokoc08os84sw` — Coolify itself pushes the route. If this breaks again, verify the app's domains include `pixilens.com` and `www.pixilens.com`. |
+| **Verify** | `ssh priyanka '/home/priyanka/go/bin/coolify app get a4gcggkck44cokoc08os84sw --context Coolify1'` — FQDN must include pixilens.com |
+
+---
+
+### 12. Containers missing after priyanka reboot
+
+| | |
+|--|--|
+| **Symptom** | `pixilens.com` or `cdn.pixilens.online` return 502/404 after server restart |
+| **Cause** | Manual Docker containers need explicit startup if Docker daemon restart order races with Coolify |
+| **Fix** | `sudo systemctl restart pixilens-containers.service` — or run startup scripts manually |
+
+---
 
 | | |
 |--|--|
@@ -239,53 +258,36 @@ After enabling indexing, verify `https://YOUR-DOMAIN/robots.txt` and submit `htt
 
 ## Deploy commands
 
-> ⚠️ **Updated 2026-06-14**: Deploy is via **GitHub push** — Coolify auto-deploys!
+> Deploy is via **GitHub push** — Coolify auto-builds Azure backup. Priyanka requires manual rebuild.
 
-### Deploy to production (ALL THREE sites!)
+### Production deploy
 
 ```bash
-# Just push to GitHub - Coolify auto-deploys from main branch
+# 1. Push to GitHub → Azure backup auto-deploys (~2-5 min)
 git push origin main
 
-# Wait ~2-5 minutes for build + deploy
-# All three sites update:
-#   https://pixilens.com
-#   https://www.pixilens.com
-#   https://smugmug-az.pixilens.online
-```
-
-### Deploy to staging (priyanka Docker - for testing)
-
-```bash
+# 2. Rebuild priyanka container (production)
 ssh priyanka 'cd /home/priyanka/pixilens-smugmug-migrator && git pull --ff-only && \
   sudo docker build -t pixilens-smugmug:latest . && \
-  sudo docker rm -f smugmug-managed && \
-  sudo docker run -d --name smugmug-managed --restart unless-stopped --network coolify \
-    -p 3010:3000 \
-    --env-file /home/priyanka/pixilens-smugmug-admin/.env \
-    -e MEDIA_ROOT=/admin-data/media \
-    -e ADMIN_DATA_DIR=/admin-data \
-    -e NEXT_PUBLIC_SITE_URL=https://smugmug.pixilens.online \
-    -v /home/priyanka/pixilens-smugmug-admin/data:/admin-data \
-    -v /home/priyanka/pixilens-smugmug-admin/certs:/app/certs \
-    --label traefik.enable=true \
-    --label traefik.http.middlewares.gzip.compress=true \
-    --label traefik.http.routers.http-0-smugmug-managed.entryPoints=http \
-    --label traefik.http.routers.http-0-smugmug-managed.middlewares=gzip \
-    --label traefik.http.routers.http-0-smugmug-managed.rule="Host(\`smugmug.pixilens.online\`) && PathPrefix(\`/\`)" \
-    --label traefik.http.routers.http-0-smugmug-managed.service=http-0-smugmug-managed \
-    --label traefik.http.services.http-0-smugmug-managed.loadbalancer.server.port=3000 \
-    pixilens-smugmug:latest'
+  /home/priyanka/pixilens-smugmug-admin/start-smugmug-managed.sh'
 ```
 
-### Manual Coolify deploy (if GitHub webhook fails)
+### Emergency: restart containers without rebuild
 
 ```bash
-# Force redeploy from GitHub
-ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start l08cogcggk4oksg0kwwos44k --force --instant-deploy'
+# Restart both containers via systemd
+ssh priyanka 'sudo systemctl restart pixilens-containers.service'
+
+# Or individually
+ssh priyanka '/home/priyanka/pixilens-smugmug-admin/start-smugmug-managed.sh'
+ssh priyanka '/home/priyanka/pixilens-cdn/start-cdn.sh'
 ```
 
-After env changes on Coolify, **redeploy** so runtime picks up new values.
+### Force Azure redeploy (if webhook failed)
+
+```bash
+ssh priyanka '/home/priyanka/go/bin/coolify --context Coolify1 app start l08cogcggk4oksg0kwwos44k --force --instant-deploy'
+```
 
 ---
 
