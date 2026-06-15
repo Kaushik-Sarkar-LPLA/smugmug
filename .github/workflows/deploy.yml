@@ -1,0 +1,24 @@
+name: Deploy to Priyanka
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to priyanka
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /home/priyanka/pixilens-smugmug-migrator
+            git pull --ff-only
+            sudo docker build -t pixilens-smugmug:latest .
+            /home/priyanka/pixilens-smugmug-admin/start-smugmug-managed.sh
+            echo "Deploy complete: $(git log -1 --oneline)"
