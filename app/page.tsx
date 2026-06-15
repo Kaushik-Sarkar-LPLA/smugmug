@@ -6,7 +6,7 @@ import { ImageWithLoader } from '@/components/ImageWithLoader';
 import { LocalBusinessJsonLd } from '@/components/seo/LocalBusinessJsonLd';
 import { LocalServiceAreaSection } from '@/components/seo/LocalServiceAreaSection';
 import { getHomepageConfig } from '@/lib/admin/homepage-config';
-import { homepageGridSrc, homepageHeroFullSrc, homepageHeroIsWebOptimized } from '@/lib/homepage-images';
+import { homepageGridSrc } from '@/lib/homepage-images';
 import { buildMetadata } from '@/lib/seo';
 
 export const revalidate = 0;
@@ -22,12 +22,11 @@ export default async function Home() {
   const heroSlides = config.items.filter((item) => item.enabled && item.useInHero).sort((a, b) => a.sortOrder - b.sortOrder);
   const gallerySlides = config.items.filter((item) => item.enabled && item.useInGallery).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // Preload the first 8 gallery images — use heroUrl when available to match what the hero actually loads
+  // Preload the first 8 gallery images — skip slides that are in the hero (already loaded there via heroUrl)
   const heroSlideIds = new Set(heroSlides.map((s) => s.id));
-  for (const slide of gallerySlides.slice(0, 8)) {
-    const src = heroSlideIds.has(slide.id) && homepageHeroIsWebOptimized(slide)
-      ? homepageHeroFullSrc(slide)   // heroUrl (CDN WebP) — matches what hero renders
-      : homepageGridSrc(slide);       // displayUrl — for gallery-only slides
+  for (const slide of gallerySlides.slice(0, 12)) {
+    if (heroSlideIds.has(slide.id)) continue; // hero loads this via heroUrl — no need to preload displayUrl
+    const src = homepageGridSrc(slide);
     if (src) preload(src, { as: 'image' });
   }
 
