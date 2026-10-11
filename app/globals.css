@@ -101,6 +101,84 @@ h1, h2, h3, .font-art { font-family: 'Cinzel', Georgia, serif; }
   transform: translateY(-1px);
 }
 
+.glass-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(40, 32, 22, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.5rem 1.15rem;
+  color: rgba(23, 19, 15, 0.75);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 16px rgba(71, 52, 24, 0.06);
+  backdrop-filter: blur(14px) saturate(125%);
+  transition: all 180ms ease;
+}
+
+.glass-tab:hover {
+  border-color: rgba(168, 121, 33, 0.48);
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  transform: translateY(-1px);
+}
+
+.glass-tab--active {
+  border-color: #8e6519;
+  background: linear-gradient(135deg, #b88628, #966b1a);
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(168, 121, 33, 0.32);
+}
+
+.glass-tab--active:hover {
+  background: linear-gradient(135deg, #c4912e, #a3751e);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+.glass-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(40, 32, 22, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(23, 19, 15, 0.75);
+  font-size: 0.75rem;
+  font-weight: 500;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 8px rgba(71, 52, 24, 0.05);
+  transition: all 180ms ease;
+}
+
+.glass-page-btn:hover {
+  border-color: rgba(168, 121, 33, 0.48);
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  transform: translateY(-1px);
+}
+
+.glass-page-btn--active {
+  border-color: #8e6519;
+  background: linear-gradient(135deg, #b88628, #966b1a);
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(168, 121, 33, 0.3);
+}
+
+.glass-page-btn--active:hover {
+  background: linear-gradient(135deg, #c4912e, #a3751e);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
 .glass-button-hero {
   display: inline-flex;
   align-items: center;

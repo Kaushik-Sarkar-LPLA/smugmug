@@ -86,31 +86,19 @@ export default async function GalleryIndexPage({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={buildUrl(1, 'all')}
-              className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase transition ${
-                tab === 'all'
-                  ? 'bg-[#17130f] text-white shadow-sm'
-                  : 'glass-button text-[#17130f]/70 hover:text-[#17130f]'
-              }`}
+              className={tab === 'all' ? 'glass-tab glass-tab--active' : 'glass-tab'}
             >
               All ({filteredFolders.length + filteredGalleries.length})
             </Link>
             <Link
               href={buildUrl(1, 'folders')}
-              className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase transition ${
-                tab === 'folders'
-                  ? 'bg-[#17130f] text-white shadow-sm'
-                  : 'glass-button text-[#17130f]/70 hover:text-[#17130f]'
-              }`}
+              className={tab === 'folders' ? 'glass-tab glass-tab--active' : 'glass-tab'}
             >
               Folders ({filteredFolders.length})
             </Link>
             <Link
               href={buildUrl(1, 'galleries')}
-              className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase transition ${
-                tab === 'galleries'
-                  ? 'bg-[#17130f] text-white shadow-sm'
-                  : 'glass-button text-[#17130f]/70 hover:text-[#17130f]'
-              }`}
+              className={tab === 'galleries' ? 'glass-tab glass-tab--active' : 'glass-tab'}
             >
               Galleries ({filteredGalleries.length})
             </Link>
@@ -124,7 +112,7 @@ export default async function GalleryIndexPage({
               name="q"
               defaultValue={q}
               placeholder="Search galleries..."
-              className="glass-panel w-full rounded-full px-4 py-2 pr-9 text-xs text-[#17130f] placeholder:text-[#17130f]/40 focus:outline-none focus:ring-1 focus:ring-[#17130f]/30"
+              className="glass-panel w-full rounded-full px-4 py-2 pr-9 text-xs text-[#17130f] placeholder:text-[#17130f]/40 focus:outline-none focus:ring-1 focus:ring-[#a87921]/50"
             />
             {q ? (
               <Link
@@ -156,10 +144,10 @@ export default async function GalleryIndexPage({
             <div className="flex flex-wrap items-center gap-1.5">
               {currentPage > 1 ? (
                 <>
-                  <Link href={buildUrl(1)} className="glass-button px-3 py-1.5 text-xs">
+                  <Link href={buildUrl(1)} className="glass-page-btn">
                     First
                   </Link>
-                  <Link href={buildUrl(currentPage - 1)} className="glass-button px-3 py-1.5 text-xs">
+                  <Link href={buildUrl(currentPage - 1)} className="glass-page-btn">
                     Prev
                   </Link>
                 </>
@@ -176,11 +164,7 @@ export default async function GalleryIndexPage({
                       {showEllipsis ? <span className="px-1 text-xs text-[#17130f]/40">…</span> : null}
                       <Link
                         href={buildUrl(p)}
-                        className={`rounded-lg px-3 py-1.5 text-xs transition ${
-                          p === currentPage
-                            ? 'bg-[#17130f] font-semibold text-white shadow-xs'
-                            : 'glass-button text-[#17130f]/70 hover:text-[#17130f]'
-                        }`}
+                        className={p === currentPage ? 'glass-page-btn glass-page-btn--active' : 'glass-page-btn'}
                       >
                         {p}
                       </Link>
@@ -190,10 +174,10 @@ export default async function GalleryIndexPage({
 
               {currentPage < totalPages ? (
                 <>
-                  <Link href={buildUrl(currentPage + 1)} className="glass-button px-3 py-1.5 text-xs">
+                  <Link href={buildUrl(currentPage + 1)} className="glass-page-btn">
                     Next
                   </Link>
-                  <Link href={buildUrl(totalPages)} className="glass-button px-3 py-1.5 text-xs">
+                  <Link href={buildUrl(totalPages)} className="glass-page-btn">
                     Last
                   </Link>
                 </>
