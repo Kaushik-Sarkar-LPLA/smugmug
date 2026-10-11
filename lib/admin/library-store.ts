@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { ensureDatabase, getPool, hasDatabase, qname } from '@/lib/admin/db';
-import { mediaImageUrl } from '@/lib/media-url';
+import { mediaImageUrl, mediaThumbUrl } from '@/lib/media-url';
 import { isExcludedPublicLibraryItem, publicLibrarySqlExclude } from '@/lib/public-library-filters';
 
 export type Visibility = 'public' | 'private' | 'draft';
@@ -538,7 +538,7 @@ function galleryFromRow(row: any): GalleryRecord {
   };
 }
 
-const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status IN ('done', 'done_with_local_original'))`;
+const PUBLIC_MEDIA_WHERE = `visibility != 'private' AND (migration_status IS NULL OR migration_status IN ('done', 'done_with_local_original')) AND (public_url != '' OR display_url != '')`;
 const PUBLIC_FOLDER_WHERE = `visibility = 'public' AND ${publicLibrarySqlExclude('folders')}`;
 const PUBLIC_GALLERY_WHERE = `visibility = 'public' AND ${publicLibrarySqlExclude('galleries')}`;
 
@@ -604,7 +604,7 @@ function folderCoverFromStore(store: LibraryStore, folderId: string): string {
       )
       .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
     const cover = (gallery.coverMediaId ? images.find((item) => item.id === gallery.coverMediaId) : null) || images[0] || null;
-    const url = mediaImageUrl(cover);
+    const url = mediaThumbUrl(cover);
     if (url) return url;
   }
 
@@ -649,7 +649,7 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
     )
     SELECT DISTINCT ON (ft.root_id)
       ft.root_id AS folder_id,
-      COALESCE(NULLIF(m.public_url, ''), NULLIF(m.display_url, '')) AS cover_url
+      COALESCE(NULLIF(m.display_url, ''), NULLIF(m.public_url, '')) AS cover_url
     FROM folder_tree ft
     INNER JOIN ${qname('galleries')} g ON g.folder_id = ft.id AND g.visibility = 'public' AND ${publicLibrarySqlExclude('g')}
     INNER JOIN LATERAL (
@@ -697,7 +697,7 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
         slug: gallery.slug,
         description: gallery.description,
         mediaCount: images.length,
-        coverUrl: mediaImageUrl(cover),
+        coverUrl: mediaThumbUrl(cover),
         coverWidth: cover?.width,
         coverHeight: cover?.height,
       };
@@ -740,7 +740,7 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
       slug: gallery.slug,
       description: gallery.description,
       mediaCount: countByGallery.get(gallery.id) || 0,
-      coverUrl: mediaImageUrl(cover),
+      coverUrl: mediaThumbUrl(cover),
       coverWidth: cover?.width,
       coverHeight: cover?.height,
     };

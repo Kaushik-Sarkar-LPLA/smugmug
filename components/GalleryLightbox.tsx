@@ -99,10 +99,20 @@ export default function GalleryLightbox({
 
       <div className="flex h-full w-full items-center justify-center p-4" onClick={(event) => event.stopPropagation()}>
         <div className={`relative flex max-h-full max-w-full flex-col items-center ${loaded ? '' : 'image-loading'}`}>
+          {image.url && image.url !== fullUrl && !loaded ? (
+            <img
+              src={image.url}
+              alt={image.title}
+              className="max-h-[88vh] max-w-full rounded-lg object-contain opacity-75 blur-[0.5px] shadow-2xl"
+              aria-hidden="true"
+            />
+          ) : null}
           <img
             src={fullUrl}
             alt={image.title}
-            className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl"
+            className={`max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl transition-opacity duration-200 ${
+              loaded ? 'opacity-100' : image.url && image.url !== fullUrl ? 'absolute inset-0 m-auto opacity-0' : 'opacity-100'
+            }`}
             onLoad={() => setLoaded(true)}
           />
           {image.title ? <p className="mt-3 text-sm text-white/50">{image.title}</p> : null}
