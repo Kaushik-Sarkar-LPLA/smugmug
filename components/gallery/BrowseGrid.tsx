@@ -31,13 +31,14 @@ export function BrowseGrid({
 
   return (
     <>
-      {list.map((item) => {
+      {list.map((item, index) => {
+        const isPriority = index < 8;
         if (item.kind === 'folder') {
           const folder = item.data;
           return (
             <Link key={folder.id} href={`/folders/${folder.slug}`} className="media-card group">
               <div className="media-card__frame aspect-[4/3]">
-                <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" />
+                <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" priority={isPriority} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6">
                   <p className="text-xs uppercase tracking-[0.32em] text-white/55">Folder</p>
@@ -55,7 +56,7 @@ export function BrowseGrid({
         return (
           <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="media-card group">
             <div className="media-card__frame aspect-[3/4]">
-              <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" />
+              <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" priority={isPriority} />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6">
                 <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>

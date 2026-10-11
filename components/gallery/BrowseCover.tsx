@@ -35,24 +35,35 @@ export function BrowseCover({
   url,
   alt,
   kind,
+  priority = false,
 }: {
   url: string;
   alt: string;
   kind: 'folder' | 'gallery';
+  priority?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (!url || failed) {
     return <BrowseCoverPlaceholder kind={kind} />;
   }
 
   return (
-    <img
-      src={url}
-      alt={alt}
-      className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
+    <>
+      {!loaded && <BrowseCoverPlaceholder kind={kind} />}
+      <img
+        src={url}
+        alt={alt}
+        className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+          loaded ? 'opacity-90 group-hover:opacity-100' : 'opacity-0'
+        }`}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+      />
+    </>
   );
 }

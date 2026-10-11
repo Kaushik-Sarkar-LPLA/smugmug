@@ -187,6 +187,7 @@ export async function saveLibrary(store: LibraryStore) {
       await db.query(`INSERT INTO ${qname('media')} (id,gallery_id,type,title,caption,slug,visibility,sort_order,provider,public_url,display_url,delete_url,local_path,file_name,mime_type,size_bytes,width,height,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`, [item.id, item.galleryId, item.type, item.title, item.caption, item.slug, item.visibility, item.sortOrder, item.provider, item.publicUrl, item.displayUrl, item.deleteUrl || null, item.localPath || null, item.fileName, item.mimeType, item.sizeBytes, item.width || null, item.height || null, item.createdAt, item.updatedAt]);
     }
     await db.query('COMMIT');
+    invalidateBrowseCache();
   } catch (error) {
     await db.query('ROLLBACK');
     throw error;
@@ -316,11 +317,13 @@ export async function setGalleryCoverMedia(galleryId: string, mediaId: string) {
       gallery.id === galleryId ? { ...gallery, coverMediaId: mediaId, updatedAt: now() } : gallery,
     );
     await saveLibraryToJson(store);
+    invalidateBrowseCache();
     return;
   }
   await ensureDatabase();
   const db = getPool();
   await db.query(`UPDATE ${qname('galleries')} SET cover_media_id = $1, updated_at = now() WHERE id = $2`, [mediaId, galleryId]);
+  invalidateBrowseCache();
 }
 
 async function listMediaInGallery(galleryId: string): Promise<MediaRecord[]> {
@@ -773,7 +776,23 @@ function browseFoldersFromStore(store: LibraryStore, parentFolderId: string, cov
   }));
 }
 
+type BrowseCacheEntry = {
+  data: { folders: PublicBrowseFolder[]; galleries: PublicBrowseGallery[] };
+  timestamp: number;
+};
+const browseCache = new Map<string, BrowseCacheEntry>();
+const BROWSE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export function invalidateBrowseCache() {
+  browseCache.clear();
+}
+
 export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: PublicBrowseFolder[]; galleries: PublicBrowseGallery[] }> {
+  const cached = browseCache.get(parentFolderId);
+  if (cached && Date.now() - cached.timestamp < BROWSE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   if (!hasDatabase()) {
     const store = await getLibraryFromJson();
     const galleries = store.galleries
@@ -782,10 +801,12 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     const folderCovers = await enrichFolderCovers(
       store.folders.filter((folder) => folder.parentId === parentFolderId && isPublicFolderRecord(folder)).map((folder) => folder.id),
     );
-    return {
+    const result = {
       folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
       galleries: await enrichPublicGalleries(galleries),
     };
+    browseCache.set(parentFolderId, { data: result, timestamp: Date.now() });
+    return result;
   }
 
   try {
@@ -814,7 +835,9 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
       }))
       .filter((folder) => folder.childFolderCount > 0 || folder.galleryCount > 0);
     const galleries = await enrichPublicGalleries(galleriesRes.rows.map(galleryFromRow));
-    return { folders, galleries };
+    const result = { folders, galleries };
+    browseCache.set(parentFolderId, { data: result, timestamp: Date.now() });
+    return result;
   } catch {
     const store = await getLibraryFromJson();
     const galleries = store.galleries
@@ -823,23 +846,49 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     const folderCovers = await enrichFolderCovers(
       store.folders.filter((folder) => folder.parentId === parentFolderId && isPublicFolderRecord(folder)).map((folder) => folder.id),
     );
-    return {
+    const result = {
       folders: browseFoldersFromStore(store, parentFolderId, folderCovers),
       galleries: await enrichPublicGalleries(galleries),
     };
+    browseCache.set(parentFolderId, { data: result, timestamp: Date.now() });
+    return result;
   }
 }
 
 export async function getPublicFolderBySlug(slug: string): Promise<FolderRecord | null> {
-  const folders = await getFoldersForAdmin();
-  const folder = folders.find((item) => item.slug === slug && isPublicFolderRecord(item)) || null;
-  return folder;
+  if (!hasDatabase()) {
+    const folders = await getFoldersForAdmin();
+    return folders.find((item) => item.slug === slug && isPublicFolderRecord(item)) || null;
+  }
+  try {
+    await ensureDatabase();
+    const res = await getPool().query(
+      `SELECT * FROM ${qname('folders')} WHERE slug = $1 AND ${PUBLIC_FOLDER_WHERE} LIMIT 1`,
+      [slug]
+    );
+    return res.rowCount ? folderFromRow(res.rows[0]) : null;
+  } catch {
+    const folders = await getFoldersForAdmin();
+    return folders.find((item) => item.slug === slug && isPublicFolderRecord(item)) || null;
+  }
 }
 
 export async function getPublicGalleryBySlug(slug: string): Promise<GalleryRecord | null> {
-  const galleries = await getGalleriesForAdmin();
-  const gallery = galleries.find((item) => item.slug === slug && isPublicGalleryRecord(item)) || null;
-  return gallery;
+  if (!hasDatabase()) {
+    const galleries = await getGalleriesForAdmin();
+    return galleries.find((item) => item.slug === slug && isPublicGalleryRecord(item)) || null;
+  }
+  try {
+    await ensureDatabase();
+    const res = await getPool().query(
+      `SELECT * FROM ${qname('galleries')} WHERE slug = $1 AND ${PUBLIC_GALLERY_WHERE} LIMIT 1`,
+      [slug]
+    );
+    return res.rowCount ? galleryFromRow(res.rows[0]) : null;
+  } catch {
+    const galleries = await getGalleriesForAdmin();
+    return galleries.find((item) => item.slug === slug && isPublicGalleryRecord(item)) || null;
+  }
 }
 
 export async function getPublicSitemapSlugs(): Promise<{
