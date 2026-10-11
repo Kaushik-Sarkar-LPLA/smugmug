@@ -25,25 +25,29 @@ function GridImageCard({
   onOpen: (index: number) => void;
   isPriority: boolean;
 }) {
-  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   return (
     <button
       type="button"
       onClick={() => onOpen(index)}
-      className={`media-card group relative aspect-[3/4] w-full text-left ${loaded ? '' : 'image-loading'}`}
+      className="media-card group relative aspect-[3/4] w-full text-left bg-neutral-900 overflow-hidden"
     >
-      <img
-        src={image.url}
-        alt={image.title}
-        className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
-          loaded ? 'opacity-90 group-hover:opacity-100' : 'opacity-0'
-        }`}
-        loading={isPriority ? 'eager' : 'lazy'}
-        fetchPriority={isPriority ? 'high' : 'auto'}
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-      />
+      {failed ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-white/40 text-xs">
+          Image unavailable
+        </div>
+      ) : (
+        <img
+          src={image.url}
+          alt={image.title}
+          className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+          loading={isPriority ? 'eager' : 'lazy'}
+          fetchPriority={isPriority ? 'high' : 'auto'}
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      )}
       <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/40">
         <span className="rounded-full border border-white/60 px-4 py-1.5 text-xs uppercase tracking-widest text-white opacity-0 transition duration-300 group-hover:opacity-100">
           View image
