@@ -31,8 +31,14 @@ export function qname(table: string) {
 }
 
 function sslConfig() {
-  const certsDir = process.env.SSL_CERTS_DIR;
-  if (certsDir) {
+  const candidates = [
+    process.env.SSL_CERTS_DIR,
+    path.join(process.cwd(), 'certs'),
+    '/app/certs',
+    '/home/priyanka/pixilens-smugmug-admin/certs',
+  ].filter(Boolean) as string[];
+
+  for (const certsDir of candidates) {
     try {
       const ca = path.join(certsDir, 'ca.crt');
       const cert = path.join(certsDir, 'client_grabber_user.crt');
@@ -46,7 +52,7 @@ function sslConfig() {
         };
       }
     } catch {
-      return { rejectUnauthorized: false };
+      // Continue to next candidate
     }
   }
   const sslCa = process.env.SSL_CA;
@@ -168,5 +174,12 @@ export async function ensureDatabase() {
       updated_at timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_media_gallery_sort ON ${qname('media')}(gallery_id, sort_order, created_at)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_media_gallery_vis ON ${qname('media')}(gallery_id, visibility)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_media_type ON ${qname('media')}(type)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_galleries_folder ON ${qname('galleries')}(folder_id, sort_order)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_galleries_slug ON ${qname('galleries')}(slug)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_folders_parent ON ${qname('folders')}(parent_id, sort_order)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_folders_slug ON ${qname('folders')}(slug)`);
   initialized = true;
 }

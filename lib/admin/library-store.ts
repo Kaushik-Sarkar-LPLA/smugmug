@@ -649,11 +649,15 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
     )
     SELECT DISTINCT ON (ft.root_id)
       ft.root_id AS folder_id,
-      COALESCE(NULLIF(m.display_url, ''), NULLIF(m.public_url, '')) AS cover_url
+      CASE
+        WHEN m.display_url LIKE 'https://%' THEN m.display_url
+        WHEN m.id IS NOT NULL THEN 'https://cdn.pixilens.online/' || m.id || '.jpg'
+        ELSE COALESCE(NULLIF(m.display_url, ''), NULLIF(m.public_url, ''))
+      END AS cover_url
     FROM folder_tree ft
     INNER JOIN ${qname('galleries')} g ON g.folder_id = ft.id AND g.visibility = 'public' AND ${publicLibrarySqlExclude('g')}
     INNER JOIN LATERAL (
-      SELECT public_url, display_url
+      SELECT id, public_url, display_url, type
       FROM ${qname('media')} m2
       WHERE m2.gallery_id = g.id
         AND m2.visibility != 'private'
@@ -661,11 +665,18 @@ async function enrichFolderCovers(folderIds: string[]): Promise<Map<string, stri
         AND COALESCE(NULLIF(m2.public_url, ''), NULLIF(m2.display_url, '')) <> ''
       ORDER BY
         CASE WHEN m2.id = g.cover_media_id THEN 0 ELSE 1 END,
+        CASE WHEN m2.type = 'photo' THEN 0 ELSE 1 END,
         m2.sort_order,
         m2.created_at
       LIMIT 1
     ) m ON true
-    ORDER BY ft.root_id, ft.depth, ft.sort_order, ft.title, g.sort_order, g.title`,
+    ORDER BY
+      ft.root_id,
+      CASE WHEN EXISTS (
+        SELECT 1 FROM ${qname('media')} pm
+        WHERE pm.gallery_id = g.id AND pm.type = 'photo' AND pm.visibility != 'private'
+      ) THEN 0 ELSE 1 END,
+      ft.depth, ft.sort_order, ft.title, g.sort_order, g.title`,
     [folderIds],
   );
 
@@ -718,7 +729,7 @@ async function enrichPublicGalleries(galleries: GalleryRecord[]): Promise<Public
       ? db.query(`SELECT * FROM ${qname('media')} WHERE id = ANY($1::text[])`, [coverIds])
       : Promise.resolve({ rows: [] }),
     db.query(
-      `SELECT DISTINCT ON (gallery_id) * FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} ORDER BY gallery_id, sort_order, created_at`,
+      `SELECT DISTINCT ON (gallery_id) * FROM ${qname('media')} WHERE gallery_id = ANY($1::text[]) AND ${PUBLIC_MEDIA_WHERE} ORDER BY gallery_id, CASE WHEN type = 'photo' THEN 0 ELSE 1 END, sort_order, created_at`,
       [galleryIds],
     ),
   ]);
@@ -791,15 +802,17 @@ export async function getPublicBrowse(parentFolderId = ''): Promise<{ folders: P
     const galleryCountByFolder = new Map<string, number>(galleryCounts.rows.map((row) => [row.folder_id, row.total]));
     const folderIds = foldersRes.rows.map((row) => row.id);
     const folderCovers = await enrichFolderCovers(folderIds);
-    const folders = foldersRes.rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      description: row.description,
-      childFolderCount: childCountByFolder.get(row.id) || 0,
-      galleryCount: galleryCountByFolder.get(row.id) || 0,
-      coverUrl: folderCovers.get(row.id) || '',
-    }));
+    const folders = foldersRes.rows
+      .map((row) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        description: row.description,
+        childFolderCount: childCountByFolder.get(row.id) || 0,
+        galleryCount: galleryCountByFolder.get(row.id) || 0,
+        coverUrl: folderCovers.get(row.id) || '',
+      }))
+      .filter((folder) => folder.childFolderCount > 0 || folder.galleryCount > 0);
     const galleries = await enrichPublicGalleries(galleriesRes.rows.map(galleryFromRow));
     return { folders, galleries };
   } catch {

@@ -2,51 +2,69 @@ import Link from 'next/link';
 import { BrowseCover } from '@/components/gallery/BrowseCover';
 import type { PublicBrowseFolder, PublicBrowseGallery } from '@/lib/admin/library-store';
 
+export type BrowseGridItem =
+  | { kind: 'folder'; data: PublicBrowseFolder }
+  | { kind: 'gallery'; data: PublicBrowseGallery };
+
 export function BrowseGrid({
   folders,
   galleries,
+  items,
 }: {
-  folders: PublicBrowseFolder[];
-  galleries: PublicBrowseGallery[];
+  folders?: PublicBrowseFolder[];
+  galleries?: PublicBrowseGallery[];
+  items?: BrowseGridItem[];
 }) {
-  if (!folders.length && !galleries.length) {
+  const list: BrowseGridItem[] =
+    items ?? [
+      ...(folders || []).map((f) => ({ kind: 'folder' as const, data: f })),
+      ...(galleries || []).map((g) => ({ kind: 'gallery' as const, data: g })),
+    ];
+
+  if (!list.length) {
     return (
       <div className="glass-panel col-span-full mx-auto max-w-3xl rounded-xl p-8 text-center text-[#17130f]/65">
-        No public folders or galleries here yet.
+        No public folders or galleries found.
       </div>
     );
   }
 
   return (
     <>
-      {folders.map((folder) => (
-        <Link key={folder.id} href={`/folders/${folder.slug}`} className="media-card group">
-          <div className="media-card__frame aspect-[4/3]">
-            <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-6">
-              <p className="text-xs uppercase tracking-[0.32em] text-white/55">Folder</p>
-              <h2 className="font-art mt-2 break-words text-2xl leading-tight tracking-[0.08em] text-white">{folder.title}</h2>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-white/50">
-                {folder.childFolderCount} folders · {folder.galleryCount} galleries
-              </p>
-            </div>
-          </div>
-        </Link>
-      ))}
+      {list.map((item) => {
+        if (item.kind === 'folder') {
+          const folder = item.data;
+          return (
+            <Link key={folder.id} href={`/folders/${folder.slug}`} className="media-card group">
+              <div className="media-card__frame aspect-[4/3]">
+                <BrowseCover url={folder.coverUrl} alt={folder.title} kind="folder" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <p className="text-xs uppercase tracking-[0.32em] text-white/55">Folder</p>
+                  <h2 className="font-art mt-2 break-words text-2xl leading-tight tracking-[0.08em] text-white">{folder.title}</h2>
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-white/50">
+                    {folder.childFolderCount} folders · {folder.galleryCount} galleries
+                  </p>
+                </div>
+              </div>
+            </Link>
+          );
+        }
 
-      {galleries.map((gallery) => (
-        <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="media-card group">
-          <div className="media-card__frame aspect-[3/4]">
-            <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-6">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>
-              <h2 className="font-art mt-2 break-words text-xl leading-tight tracking-[0.08em] text-white">{gallery.title}</h2>
+        const gallery = item.data;
+        return (
+          <Link key={gallery.id} href={`/galleries/${gallery.slug}`} className="media-card group">
+            <div className="media-card__frame aspect-[3/4]">
+              <BrowseCover url={gallery.coverUrl} alt={gallery.title} kind="gallery" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-white/58">{gallery.mediaCount} items</p>
+                <h2 className="font-art mt-2 break-words text-xl leading-tight tracking-[0.08em] text-white">{gallery.title}</h2>
+              </div>
             </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
     </>
   );
 }

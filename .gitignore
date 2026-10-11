@@ -16,6 +16,9 @@ build/
 .env
 .env.*
 !.env.example
+certs/
+*.crt
+*.key
 
 # local data and exports
 data/export/
